@@ -177,10 +177,12 @@ export default function HomeScreen() {
             setBalanceVisible(true);
             return;
           }
+          // disableDeviceFallback: true shows device PIN/pattern/password directly,
+          // no biometric prompt — passcode only for balance reveal.
           const result = await LocalAuthentication.authenticateAsync({
-            promptMessage: 'Authenticate to view your balance',
+            promptMessage: 'Enter your device passcode to view balance',
             cancelLabel: 'Cancel',
-            disableDeviceFallback: false,
+            disableDeviceFallback: true,
           });
           if (result.success) {
             setBalanceUnlockedThisSession(true);

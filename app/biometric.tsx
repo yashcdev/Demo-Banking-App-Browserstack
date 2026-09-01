@@ -71,7 +71,10 @@ export default function BiometricScreen() {
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: 'Verify your identity to continue',
         cancelLabel: 'Cancel',
-        disableDeviceFallback: false,
+        // disableDeviceFallback: true — biometric only, no "Use PIN" fallback button
+        // inside the prompt. This means a single Fail press resolves immediately
+        // without requiring the user to also dismiss a passcode fallback option.
+        disableDeviceFallback: true,
       });
       setBioLoading(false);
       if (result.success) {

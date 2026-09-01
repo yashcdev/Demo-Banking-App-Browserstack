@@ -86,7 +86,9 @@ export function TransactionAuthModal({ visible, amount, description, onSuccess, 
   };
 
   const validatePin = async (_enteredPin: string) => {
-    // Verify against the device passcode/biometric using LocalAuthentication
+    // Verify against the device passcode only (no biometric) using LocalAuthentication.
+    // disableDeviceFallback: true on Android shows the device PIN/pattern/password
+    // screen directly, bypassing the biometric prompt entirely.
     try {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
@@ -95,9 +97,9 @@ export function TransactionAuthModal({ visible, amount, description, onSuccess, 
         return;
       }
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to authorize transaction',
+        promptMessage: 'Enter your device passcode to authorize',
         cancelLabel: 'Cancel',
-        disableDeviceFallback: false,
+        disableDeviceFallback: true,
       });
       if (result.success) {
         handleSuccess();
