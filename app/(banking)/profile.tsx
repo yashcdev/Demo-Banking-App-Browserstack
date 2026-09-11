@@ -2,12 +2,12 @@ import { Shimmer } from '@/components/shimmer';
 import { BSColors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api } from '@/store/api';
-import { AuthStore } from '@/store/auth';
+import { AuthStore, useAuthStore } from '@/store/auth';
 import { BankStore } from '@/store/banking';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Image, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const DEFAULT_USER = {
@@ -23,13 +23,14 @@ const DEFAULT_USER = {
 };
 
 export default function ProfileScreen() {
-  const { primaryColor, primaryBg, primaryBorder, greenMode } = useTheme();
+  const { primaryColor, primaryBorder, greenMode } = useTheme();
   const router = useRouter();
   const [balance, setBalance] = useState(BankStore.getBalance());
   const [txCount, setTxCount] = useState(BankStore.getTransactions().length);
   const [userInfo, setUserInfo] = useState(DEFAULT_USER);
   const [profileLoading, setProfileLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(AuthStore.getUser()?.avatarUrl ?? null);
+  const biometricEnabled = useAuthStore(s => s.biometricEnabled);
 
   // Keep avatar in sync if it's updated (e.g. after liveness upload)
   useEffect(() => {
@@ -120,6 +121,12 @@ export default function ProfileScreen() {
             </>
           ) : (
             <>
+              <TouchableOpacity
+                onPress={() => router.push('/liveness' as any)}
+                testID="profile-avatar-tap"
+                accessibilityLabel="Update profile photo"
+                accessibilityRole="button"
+              >
               {avatarUrl ? (
                 <Image
                   source={{ uri: avatarUrl }}
@@ -132,6 +139,10 @@ export default function ProfileScreen() {
                   <Text style={styles.avatarText}>{userInfo.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}</Text>
                 </View>
               )}
+              <View style={styles.avatarEditBadge}>
+                <Ionicons name="camera-outline" size={12} color={BSColors.white} />
+              </View>
+              </TouchableOpacity>
               <Text style={styles.userName}>{userInfo.name}</Text>
               <Text style={styles.userEmail}>{userInfo.email}</Text>
               <View style={styles.kycBadge}>
@@ -227,6 +238,25 @@ export default function ProfileScreen() {
         {/* Settings */}
         <Text style={styles.sectionTitle}>Settings</Text>
         <View style={styles.infoCard}>
+          {/* Biometric Login Toggle */}
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconWrap}>
+              <Ionicons name="finger-print-outline" size={18} color={primaryColor} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoValue}>Biometric Login</Text>
+              <Text style={styles.infoLabel}>{biometricEnabled ? 'Enabled' : 'Disabled'}</Text>
+            </View>
+            <Switch
+              value={biometricEnabled}
+              onValueChange={(val) => AuthStore.setBiometricEnabled(val)}
+              trackColor={{ false: BSColors.mediumGray, true: BSColors.primary + '80' }}
+              thumbColor={biometricEnabled ? BSColors.primary : BSColors.slate300}
+              testID="biometric-toggle"
+              accessibilityLabel={biometricEnabled ? 'Biometric login is enabled, tap to disable' : 'Biometric login is disabled, tap to enable'}
+              accessibilityRole="switch"
+            />
+          </View>
           <TouchableOpacity
             style={[styles.infoRow, { borderBottomWidth: 0 }]}
             onPress={() => router.push({ pathname: '/(banking)/webview' as any, params: { url: 'https://www.reuters.com/finance/', title: 'Financial News' } })}
@@ -277,6 +307,7 @@ const styles = StyleSheet.create({
   avatarSection: { alignItems: 'center', marginBottom: 24 },
   avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: BSColors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 12, shadowColor: BSColors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
   avatarImage: { width: 80, height: 80, borderRadius: 40, marginBottom: 12, shadowColor: BSColors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+  avatarEditBadge: { position: 'absolute', bottom: 12, right: -4, width: 22, height: 22, borderRadius: 11, backgroundColor: BSColors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: BSColors.bgPageAlt },
   avatarText: { color: BSColors.white, fontSize: 28, fontWeight: '800' },
   userName: { color: BSColors.textPrimary, fontSize: 20, fontWeight: '700', marginBottom: 4 },
   userEmail: { color: BSColors.darkGray, fontSize: 14, marginBottom: 10 },

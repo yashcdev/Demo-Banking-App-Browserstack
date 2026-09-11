@@ -16,10 +16,15 @@ export default function LivenessScreen() {
 
   const flowConfig = AuthStore.getFlowConfig();
 
-  // Intercept Android back — go back to OTP screen
+  // Intercept Android back
   React.useEffect(() => {
     const onBack = () => {
-      router.replace('/otp' as any);
+      const flow = AuthStore.getFlow();
+      if (flow === 'login') {
+        router.replace('/(banking)/profile' as any);
+      } else {
+        router.replace('/otp' as any);
+      }
       return true;
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
@@ -33,13 +38,14 @@ export default function LivenessScreen() {
   }, []);
 
   const navigateNext = () => {
-    if (flowConfig.biometric) {
-      router.replace('/biometric' as any);
-    } else if (flowConfig.fileUpload) {
-      router.replace('/kyc' as any);
-    } else {
-      router.replace('/(banking)/home' as any);
+    const flow = AuthStore.getFlow();
+    // When called from profile (login flow), go back to profile
+    if (flow === 'login') {
+      router.replace('/(banking)/profile' as any);
+      return;
     }
+    // Signup flow — original chain (biometric removed per new spec, go to home)
+    router.replace('/(banking)/home' as any);
   };
 
   const handleLaunchCamera = async () => {

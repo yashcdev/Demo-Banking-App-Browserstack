@@ -7,15 +7,15 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -80,16 +80,7 @@ export default function SignupScreen() {
     AuthStore.setFlow('signup');
     AuthStore.setEmail(email);
     AuthStore.setFlowConfig(flowConfig);
-    const cfg = flowConfig;
-    if (cfg.cameraInjection) {
-      router.replace('/liveness' as any);
-    } else if (cfg.biometric) {
-      router.replace('/biometric' as any);
-    } else if (cfg.fileUpload) {
-      router.replace('/kyc' as any);
-    } else {
-      router.replace('/(banking)/home' as any);
-    }
+    router.replace('/(banking)/home' as any);
     setLoading(false);
   };
 

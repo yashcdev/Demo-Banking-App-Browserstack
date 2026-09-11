@@ -4,7 +4,7 @@ import { AuthStore } from '@/store/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -30,7 +30,7 @@ export default function OTPScreen() {
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
     return () => sub.remove();
-  }, [isSignup]);
+  }, [isSignup, router]);
 
   // Send OTP on mount and store it for autofill (demo convenience)
   useEffect(() => {
@@ -153,7 +153,7 @@ export default function OTPScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={s.resendRow} onPress={handleResend}>
-            <Text style={s.resendText}>Didn't receive code? <Text style={s.resendLink}>Resend</Text></Text>
+            <Text style={s.resendText}>Didn&apos;t receive code? <Text style={s.resendLink}>Resend</Text></Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
