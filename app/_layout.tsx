@@ -60,12 +60,20 @@ export default function RootLayout() {
                   AuthStore.setRole(profile.role === 'admin' ? 'admin' : 'user');
                 }
               } catch { /* use token without profile */ }
-              // Only auto-route to home on a clean login flow.
+              // Only auto-route on a clean login flow.
               // If the user backed out of biometric mid-login, the token was
               // already cleared in biometric.tsx handleBack(), so this branch
               // won't be reached. This guard is an extra safety net.
               if (AuthStore.getFlow() !== 'signup') {
-                router.replace('/(banking)/home' as any);
+                // Load persisted biometric preference before deciding where to go.
+                await AuthStore.loadBiometricEnabled();
+                const biometricEnabled = AuthStore.getBiometricEnabled();
+                if (biometricEnabled) {
+                  router.replace('/biometric' as any);
+                } else {
+                  const role = AuthStore.getRole();
+                  router.replace(role === 'admin' ? '/(admin)/users' as any : '/(banking)/home' as any);
+                }
               }
               return;
             }
@@ -159,7 +167,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="signup" options={{ headerShown: false }} />
           <Stack.Screen name="otp" options={{ headerShown: false }} />
-          <Stack.Screen name="biometric" options={{ headerShown: false }} />
+          <Stack.Screen name="biometric" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="liveness" options={{ headerShown: false }} />
           <Stack.Screen name="kyc" options={{ headerShown: false }} />
           <Stack.Screen name="dashboard" options={{ headerShown: false }} />
