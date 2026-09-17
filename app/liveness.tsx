@@ -2,7 +2,7 @@ import { BSColors } from '@/constants/theme';
 import { AuthStore } from '@/store/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
+// import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -49,23 +49,25 @@ export default function LivenessScreen() {
   };
 
   const handleLaunchCamera = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      // Permission denied — skip
-      navigateNext();
-      return;
-    }
-    // Launch native OS camera — leaves the app, user takes photo, returns here
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: 'images',
-      quality: 0.85,
-      allowsEditing: false,
-    });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setCapturedUri(result.assets[0].uri);
-      setPhase('preview');
-    }
-    // If cancelled, stay on ready screen
+    // FILE UPLOAD COMMENTED OUT — uncomment import and body below to re-enable
+    // const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    // if (status !== 'granted') {
+    //   // Permission denied — skip
+    //   navigateNext();
+    //   return;
+    // }
+    // // Launch native OS camera — leaves the app, user takes photo, returns here
+    // const result = await ImagePicker.launchCameraAsync({
+    //   mediaTypes: 'images',
+    //   quality: 0.85,
+    //   allowsEditing: false,
+    // });
+    // if (!result.canceled && result.assets?.[0]?.uri) {
+    //   setCapturedUri(result.assets[0].uri);
+    //   setPhase('preview');
+    // }
+    // // If cancelled, stay on ready screen
+    navigateNext();
   };
 
   const handleRecapture = () => {
@@ -74,31 +76,32 @@ export default function LivenessScreen() {
   };
 
   const handleSetProfile = async () => {
-    if (!capturedUri) return;
-    setUploadLoading(true);
-    try {
-      const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'fhyftzkc';
-      const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? 'bs_banking_unsigned';
-      const formData = new FormData();
-      formData.append('file', { uri: capturedUri, type: 'image/jpeg', name: 'liveness.jpg' } as any);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('folder', 'bs_banking/profiles');
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.secure_url) {
-        const currentUser = AuthStore.getUser();
-        if (currentUser) {
-          AuthStore.setUser({ ...currentUser, avatarUrl: data.secure_url });
-        }
-      }
-    } catch {
-      // Non-fatal
-    } finally {
-      setUploadLoading(false);
-    }
+    // FILE UPLOAD COMMENTED OUT — uncomment below to re-enable Cloudinary upload
+    // if (!capturedUri) return;
+    // setUploadLoading(true);
+    // try {
+    //   const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'fhyftzkc';
+    //   const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? 'bs_banking_unsigned';
+    //   const formData = new FormData();
+    //   formData.append('file', { uri: capturedUri, type: 'image/jpeg', name: 'liveness.jpg' } as any);
+    //   formData.append('upload_preset', uploadPreset);
+    //   formData.append('folder', 'bs_banking/profiles');
+    //   const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    //     method: 'POST',
+    //     body: formData,
+    //   });
+    //   const data = await res.json();
+    //   if (data.secure_url) {
+    //     const currentUser = AuthStore.getUser();
+    //     if (currentUser) {
+    //       AuthStore.setUser({ ...currentUser, avatarUrl: data.secure_url });
+    //     }
+    //   }
+    // } catch {
+    //   // Non-fatal
+    // } finally {
+    //   setUploadLoading(false);
+    // }
     navigateNext();
   };
 

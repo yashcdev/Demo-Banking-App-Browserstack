@@ -121,8 +121,15 @@ export default function ProfileScreen() {
             </>
           ) : (
             <>
-              <TouchableOpacity
+              {/* FILE UPLOAD COMMENTED OUT — uncomment to re-enable liveness/photo upload */}
+              {/* <TouchableOpacity
                 onPress={() => router.push('/liveness' as any)}
+                testID="profile-avatar-tap"
+                accessibilityLabel="Update profile photo"
+                accessibilityRole="button"
+              > */}
+              <TouchableOpacity
+                onPress={() => {}}
                 testID="profile-avatar-tap"
                 accessibilityLabel="Update profile photo"
                 accessibilityRole="button"

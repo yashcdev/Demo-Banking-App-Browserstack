@@ -56,7 +56,13 @@ export function TransactionAuthModal({ visible, amount, description, onSuccess, 
   // Single native auth — biometric if available, falls back to device passcode.
   // disableDeviceFallback: false lets the OS show biometric OR passcode prompt.
   // Do NOT skip based on isEnrolled — BrowserStack executor handles it.
+  // When biometric is disabled app-wide, skip auth and auto-succeed.
   const triggerAuth = async () => {
+    const { AuthStore } = await import('@/store/auth');
+    if (!AuthStore.getBiometricEnabled()) {
+      handleSuccess();
+      return;
+    }
     setAuthLoading(true);
     setAuthError('');
     try {

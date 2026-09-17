@@ -160,6 +160,7 @@ export default function HomeScreen() {
   }, []);
 
   // Balance eye-icon handler — uses device passcode via LocalAuthentication
+  // When biometric is disabled app-wide, skip auth and show balance directly.
   const handleBalanceToggle = async () => {
     if (balanceVisible) {
       // User manually hides — require passcode again next time
@@ -169,6 +170,12 @@ export default function HomeScreen() {
       if (balanceUnlockedThisSession) {
         setBalanceVisible(true);
       } else {
+        const biometricEnabled = AuthStore.getBiometricEnabled();
+        if (!biometricEnabled) {
+          setBalanceUnlockedThisSession(true);
+          setBalanceVisible(true);
+          return;
+        }
         try {
           // Do NOT skip based on isEnrolled — on BrowserStack the passcode executor
           // handles this. disableDeviceFallback: false shows the device passcode
@@ -207,7 +214,7 @@ export default function HomeScreen() {
     { label: 'Chat', icon: 'chatbubbles-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/chat' as any) },
     { label: 'Scan QR', icon: 'qr-code-outline' as const, color: BSColors.errorDark, bg: '#DC262615', onPress: openQRScanner },
     { label: 'Shop', icon: 'bag-outline' as const, color: BSColors.successDark, bg: '#05966915', onPress: () => router.push('/(banking)/shop' as any) },
-    { label: 'Upload Doc', icon: 'document-attach-outline' as const, color: '#D97706', bg: '#D9770615', onPress: () => router.push('/kyc' as any) },
+    // { label: 'Upload Doc', icon: 'document-attach-outline' as const, color: '#D97706', bg: '#D9770615', onPress: () => router.push('/kyc' as any) },
     { label: 'Network', icon: 'wifi-outline' as const, color: BSColors.infoDark, bg: '#0891B215', onPress: () => router.push('/(banking)/network' as any) },
     { label: 'Shake', icon: 'phone-portrait-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/testfeatures' as any) },
     {
