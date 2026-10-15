@@ -12,9 +12,7 @@
       },
       "env": {
         "EXPO_PUBLIC_STRIPE_PK": "pk_test_51Tki4JPZvMiMVeM7n0bbjc5rJ0dRhxq2WkhSxeQtHbuSGE6rlJdbR7cxY0IKIbRmDmzTh69roJUP41M3iOZBGmir00iotpGdzX",
-        "EXPO_PUBLIC_API_URL": "https://bs-banking-app.onrender.com",
-        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "fhyftzkc",
-        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "bs_banking_unsigned"
+        "EXPO_PUBLIC_API_URL": "https://bs-banking-app.onrender.com"
       }
     },
     "production": {
@@ -23,9 +21,7 @@
       },
       "env": {
         "EXPO_PUBLIC_STRIPE_PK": "pk_test_51Tki4JPZvMiMVeM7n0bbjc5rJ0dRhxq2WkhSxeQtHbuSGE6rlJdbR7cxY0IKIbRmDmzTh69roJUP41M3iOZBGmir00iotpGdzX",
-        "EXPO_PUBLIC_API_URL": "https://bs-banking-app.onrender.com",
-        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "fhyftzkc",
-        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "bs_banking_unsigned"
+        "EXPO_PUBLIC_API_URL": "https://bs-banking-app.onrender.com"
       }
     },
     "ios-simulator": {
@@ -34,9 +30,7 @@
       },
       "env": {
         "EXPO_PUBLIC_STRIPE_PK": "pk_test_51Tki4JPZvMiMVeM7n0bbjc5rJ0dRhxq2WkhSxeQtHbuSGE6rlJdbR7cxY0IKIbRmDmzTh69roJUP41M3iOZBGmir00iotpGdzX",
-        "EXPO_PUBLIC_API_URL": "https://bs-banking-app.onrender.com",
-        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "fhyftzkc",
-        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "bs_banking_unsigned"
+        "EXPO_PUBLIC_API_URL": "https://bs-banking-app.onrender.com"
       }
     }
   },

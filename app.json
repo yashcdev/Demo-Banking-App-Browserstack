@@ -37,13 +37,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow BrowserStack Bank to access your camera for liveness verification and QR scanning."
+          "cameraPermission": "Allow BrowserStack Bank to access your camera for QR scanning."
         }
       ],
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Allow BrowserStack Bank to access your camera to take a liveness photo."
+          "cameraPermission": "Allow BrowserStack Bank to access your camera to scan QR codes."
         }
       ],
       [
@@ -76,7 +76,6 @@
           "sounds": []
         }
       ],
-      "@react-native-voice/voice",
       [
         "expo-build-properties",
         {
