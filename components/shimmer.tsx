@@ -1,5 +1,5 @@
 import { BSColors } from '@/constants/theme';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View, ViewStyle } from 'react-native';
 
 interface ShimmerProps {
@@ -13,12 +13,14 @@ export function Shimmer({ width = '100%', height = 16, borderRadius = 8, style }
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
         Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    loop.start();
+    return () => loop.stop();
   }, [anim]);
 
   const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.7] });
@@ -116,8 +118,66 @@ export function BalanceShimmer() {
   );
 }
 
+/**
+ * Generic full-screen placeholder: a title bar, a summary block and a few list rows.
+ * Used by screens that have no content-specific skeleton.
+ */
+export function ScreenShimmer({ rows = 5 }: { rows?: number }) {
+  return (
+    <View style={styles.screenShimmer}>
+      <Shimmer width="45%" height={24} borderRadius={8} style={{ marginBottom: 20 }} />
+      <Shimmer height={96} borderRadius={18} style={{ marginBottom: 24 }} />
+      {Array.from({ length: rows }, (_, i) => (
+        <View key={i} style={styles.screenShimmerRow}>
+          <Shimmer width={44} height={44} borderRadius={14} />
+          <View style={styles.recipientText}>
+            <Shimmer width="60%" height={14} borderRadius={7} style={{ marginBottom: 6 }} />
+            <Shimmer width="35%" height={11} borderRadius={6} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Returns true while a screen should show its shimmer. It stays up for at least
+ * `minMs` so content never pops in abruptly, and for as long as `loading` is true.
+ */
+export function useShimmerGate(loading = false, minMs = 450) {
+  const [minElapsed, setMinElapsed] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinElapsed(true), minMs);
+    return () => clearTimeout(t);
+  }, [minMs]);
+  return loading || !minElapsed;
+}
+
+/**
+ * Wraps a screen so it shows a shimmer placeholder for a short moment before its
+ * content appears, instead of popping in all at once.
+ */
+export function withShimmer<P extends object>(Screen: React.ComponentType<P>, rows = 5) {
+  function ShimmerGated(props: P) {
+    const showShimmer = useShimmerGate(false);
+    if (showShimmer) {
+      return (
+        <View style={styles.gateRoot}>
+          <ScreenShimmer rows={rows} />
+        </View>
+      );
+    }
+    return <Screen {...props} />;
+  }
+  ShimmerGated.displayName = `withShimmer(${Screen.displayName || Screen.name || 'Screen'})`;
+  return ShimmerGated;
+}
+
 const styles = StyleSheet.create({
+  gateRoot: { flex: 1, backgroundColor: BSColors.bgPage, paddingTop: 48 },
   shimmer: { backgroundColor: BSColors.indigoBorder },
+  screenShimmer: { paddingHorizontal: 20, paddingTop: 20 },
+  screenShimmerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, borderRadius: 14, padding: 14, gap: 12, marginBottom: 10 },
   cardShimmer: { marginBottom: 16 },
   recipientShimmer: { gap: 10, marginBottom: 24 },
   recipientRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, borderRadius: 14, padding: 14, gap: 12 },

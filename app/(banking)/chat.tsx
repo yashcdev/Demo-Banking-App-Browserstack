@@ -11,6 +11,7 @@ import {
   TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { withShimmer } from '@/components/shimmer';
 
 type User = { id: string; name: string; email: string; avatar: string };
 type Message = { id: string; sender_id: string; body: string; created_at: string };
@@ -23,7 +24,7 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function ChatScreen() {
+function ChatScreen() {
   const router = useRouter();
   const { primaryColor } = useTheme();
   const me = AuthStore.getUser();
@@ -296,25 +297,25 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPage },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10, borderBottomWidth: 1, borderBottomColor: BSColors.mediumGray, backgroundColor: BSColors.white },
   backBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: BSColors.lightGray, alignItems: 'center', justifyContent: 'center' },
-  pageTitle: { flex: 1, color: BSColors.textPrimary, fontSize: 17, fontWeight: '800' },
+  pageTitle: { flex: 1, color: BSColors.textPrimary, fontSize: 17, fontFamily: 'Urbanist-ExtraBold' },
   newBtn: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32 },
   emptyText: { color: BSColors.darkGray, fontSize: 14, textAlign: 'center' },
   startBtn: { borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
-  startBtnText: { color: BSColors.white, fontSize: 14, fontWeight: '700' },
+  startBtnText: { color: BSColors.white, fontSize: 14, fontFamily: 'Urbanist-Bold' },
   convRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, borderRadius: 16, padding: 14, gap: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   convTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
-  convName: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '700' },
+  convName: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-Bold' },
   convTime: { color: BSColors.darkGray, fontSize: 11 },
   convPreview: { color: BSColors.textSecondary, fontSize: 12 },
   unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
-  unreadText: { color: BSColors.white, fontSize: 11, fontWeight: '800' },
+  unreadText: { color: BSColors.white, fontSize: 11, fontFamily: 'Urbanist-ExtraBold' },
   avatar: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: BSColors.white, fontSize: 15, fontWeight: '800' },
+  avatarText: { color: BSColors.white, fontSize: 15, fontFamily: 'Urbanist-ExtraBold' },
   searchRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, margin: 16, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, gap: 8, borderWidth: 1, borderColor: BSColors.mediumGray },
   searchInput: { flex: 1, fontSize: 14, color: BSColors.textPrimary },
   userRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, borderRadius: 16, padding: 14, gap: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  userName: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 2 },
+  userName: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-Bold', marginBottom: 2 },
   userEmail: { color: BSColors.darkGray, fontSize: 12 },
   bubble: { maxWidth: '78%', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
   bubbleMine: { alignSelf: 'flex-end', borderBottomRightRadius: 4, backgroundColor: BSColors.accent },
@@ -328,3 +329,5 @@ const styles = StyleSheet.create({
   charCount: { color: BSColors.darkGray, fontSize: 10, alignSelf: 'flex-end', marginBottom: 10 },
   sendBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
 });
+
+export default withShimmer(ChatScreen);

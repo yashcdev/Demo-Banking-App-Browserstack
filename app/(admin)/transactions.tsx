@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BSColors } from '@/constants/theme';
+import { withShimmer } from '@/components/shimmer';
 
 type TxStatus = 'Completed' | 'Flagged' | 'Pending';
 
@@ -36,7 +37,7 @@ const TYPE_ICONS: Record<string, string> = {
   Deposit: 'arrow-down-circle-outline',
 };
 
-export default function TransactionsTab() {
+function TransactionsTab() {
   const [filter, setFilter] = useState<TxStatus | 'All'>('All');
 
   const filtered = filter === 'All' ? ALL_TX : ALL_TX.filter(t => t.status === filter);
@@ -124,34 +125,36 @@ export default function TransactionsTab() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPageLight },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: BSColors.white, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BSColors.indigoBg },
-  headerTitle: { color: '#111', fontSize: 17, fontWeight: '700' },
+  headerTitle: { color: '#111', fontSize: 17, fontFamily: 'Urbanist-Bold' },
   headerSub: { color: '#888', fontSize: 12, marginTop: 1 },
   alertBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: BSColors.errorBorderDark, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  alertBadgeText: { color: BSColors.errorDark, fontSize: 12, fontWeight: '700' },
+  alertBadgeText: { color: BSColors.errorDark, fontSize: 12, fontFamily: 'Urbanist-Bold' },
   content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 32 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   statCard: { flex: 1, backgroundColor: BSColors.white, borderRadius: 12, padding: 12, alignItems: 'center', gap: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  statValue: { fontSize: 16, fontWeight: '700' },
+  statValue: { fontSize: 16, fontFamily: 'Urbanist-Bold' },
   statLabel: { color: '#888', fontSize: 11 },
   filterRow: { marginBottom: 14 },
   filterPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: BSColors.white, borderWidth: 1, borderColor: BSColors.indigoBorder },
   filterPillActive: { backgroundColor: BSColors.primary, borderColor: BSColors.primary },
-  filterPillText: { color: '#555', fontSize: 13, fontWeight: '600' },
+  filterPillText: { color: '#555', fontSize: 13, fontFamily: 'Urbanist-SemiBold' },
   filterPillTextActive: { color: BSColors.white },
   txCard: { backgroundColor: BSColors.white, borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   txCardFlagged: { borderLeftWidth: 3, borderLeftColor: BSColors.errorDark },
   txTop: { flexDirection: 'row', alignItems: 'center' },
   txIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   txInfo: { flex: 1 },
-  txId: { color: '#888', fontSize: 11, fontWeight: '600', marginBottom: 2 },
-  txParties: { color: '#111', fontSize: 13, fontWeight: '600', marginBottom: 2 },
+  txId: { color: '#888', fontSize: 11, fontFamily: 'Urbanist-SemiBold', marginBottom: 2 },
+  txParties: { color: '#111', fontSize: 13, fontFamily: 'Urbanist-SemiBold', marginBottom: 2 },
   txDate: { color: '#AAA', fontSize: 11 },
   txRight: { alignItems: 'flex-end', gap: 4 },
-  txAmount: { color: '#111', fontSize: 14, fontWeight: '700' },
+  txAmount: { color: '#111', fontSize: 14, fontFamily: 'Urbanist-Bold' },
   txBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 },
-  txBadgeText: { fontSize: 10, fontWeight: '700' },
+  txBadgeText: { fontSize: 10, fontFamily: 'Urbanist-Bold' },
   flagNote: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: BSColors.errorBorderDark },
   flagNoteText: { color: BSColors.errorDark, fontSize: 12, flex: 1 },
   empty: { alignItems: 'center', paddingVertical: 40, gap: 10 },
   emptyText: { color: '#AAA', fontSize: 14 },
 });
+
+export default withShimmer(TransactionsTab);

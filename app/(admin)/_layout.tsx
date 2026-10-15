@@ -17,7 +17,7 @@ export default function AdminLayout() {
           paddingBottom: 10,
           paddingTop: 6,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: 'Urbanist-SemiBold' },
       }}
     >
       <Tabs.Screen

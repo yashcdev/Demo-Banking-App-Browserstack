@@ -8,8 +8,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { withShimmer } from '@/components/shimmer';
 
-export default function ShakeScreen() {
+function ShakeScreen() {
   const { primaryColor } = useTheme();
   const router = useRouter();
   const [shakeEnabled, setShakeEnabled] = useState(false);
@@ -186,39 +187,41 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPageAlt },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: BSColors.white, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
-  pageTitle: { color: BSColors.textPrimary, fontSize: 18, fontWeight: '700' },
+  pageTitle: { color: BSColors.textPrimary, fontSize: 18, fontFamily: 'Urbanist-Bold' },
   content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 },
   alertCard: { backgroundColor: BSColors.white, borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3 },
   alertIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: BSColors.errorBg, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  alertTitle: { color: BSColors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
+  alertTitle: { color: BSColors.textPrimary, fontSize: 18, fontFamily: 'Urbanist-Bold', marginBottom: 8, textAlign: 'center' },
   alertSub: { color: BSColors.darkGray, fontSize: 13, textAlign: 'center', lineHeight: 19 },
   toggleBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, paddingVertical: 14, marginBottom: 14 },
-  toggleBtnText: { color: BSColors.white, fontSize: 15, fontWeight: '700' },
+  toggleBtnText: { color: BSColors.white, fontSize: 15, fontFamily: 'Urbanist-Bold' },
   hintCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: BSColors.warningBg, borderRadius: 12, padding: 12, marginBottom: 20, borderWidth: 1, borderColor: BSColors.amberHighlight },
   hintText: { color: BSColors.amberText, fontSize: 13, flex: 1, lineHeight: 18 },
-  sectionTitle: { color: BSColors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 10 },
+  sectionTitle: { color: BSColors.textPrimary, fontSize: 15, fontFamily: 'Urbanist-Bold', marginBottom: 10 },
   txCard: { backgroundColor: BSColors.white, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   txRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
   txBorder: { borderBottomWidth: 1, borderBottomColor: BSColors.lightGray },
   txIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  txMerchant: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  txMerchant: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-SemiBold', marginBottom: 2 },
   txDate: { color: BSColors.slate300, fontSize: 12 },
-  txAmount: { color: BSColors.errorDark, fontSize: 14, fontWeight: '700' },
-  reportedBadge: { color: BSColors.errorDark, fontSize: 10, fontWeight: '700', marginTop: 2 },
+  txAmount: { color: BSColors.errorDark, fontSize: 14, fontFamily: 'Urbanist-Bold' },
+  reportedBadge: { color: BSColors.errorDark, fontSize: 10, fontFamily: 'Urbanist-Bold', marginTop: 2 },
   emptyTx: { padding: 24, alignItems: 'center' },
   emptyTxText: { color: BSColors.slate300, fontSize: 13 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalCard: { backgroundColor: BSColors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
   modalIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: BSColors.errorBorderDark, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 },
-  modalTitle: { color: BSColors.textPrimary, fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
+  modalTitle: { color: BSColors.textPrimary, fontSize: 20, fontFamily: 'Urbanist-Bold', textAlign: 'center', marginBottom: 8 },
   modalDesc: { color: BSColors.darkGray, fontSize: 14, textAlign: 'center', marginBottom: 16 },
   modalTxBox: { backgroundColor: BSColors.errorBg, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: BSColors.errorBorder },
-  modalTxMerchant: { color: BSColors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  modalTxAmount: { color: BSColors.errorDark, fontSize: 20, fontWeight: '800', marginBottom: 4 },
+  modalTxMerchant: { color: BSColors.textPrimary, fontSize: 16, fontFamily: 'Urbanist-Bold', marginBottom: 4 },
+  modalTxAmount: { color: BSColors.errorDark, fontSize: 20, fontFamily: 'Urbanist-ExtraBold', marginBottom: 4 },
   modalTxDate: { color: BSColors.slate300, fontSize: 12 },
   modalBtns: { flexDirection: 'row', gap: 12 },
   modalDismissBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: BSColors.lightGray },
-  modalDismissText: { color: BSColors.darkGray, fontSize: 15, fontWeight: '600' },
+  modalDismissText: { color: BSColors.darkGray, fontSize: 15, fontFamily: 'Urbanist-SemiBold' },
   modalReportBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, backgroundColor: BSColors.errorDark },
-  modalReportText: { color: BSColors.white, fontSize: 15, fontWeight: '700' },
+  modalReportText: { color: BSColors.white, fontSize: 15, fontFamily: 'Urbanist-Bold' },
 });
+
+export default withShimmer(ShakeScreen);

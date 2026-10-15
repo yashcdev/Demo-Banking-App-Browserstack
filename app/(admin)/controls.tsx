@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BSColors } from '@/constants/theme';
+import { withShimmer } from '@/components/shimmer';
 
 type Control = { id: string; label: string; description: string; icon: string; iconColor: string; value: boolean; danger?: boolean };
 
@@ -15,7 +16,7 @@ const INIT_CONTROLS: Control[] = [
   { id: 'audit', label: 'Audit Logging', description: 'Log all admin actions for compliance', icon: 'document-text-outline', iconColor: BSColors.infoDark, value: true },
 ];
 
-export default function ControlsTab() {
+function ControlsTab() {
   const [controls, setControls] = useState<Control[]>(INIT_CONTROLS);
 
   const toggle = (id: string, current: boolean, label: string, danger?: boolean) => {
@@ -111,21 +112,23 @@ export default function ControlsTab() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPageLight },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: BSColors.white, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BSColors.indigoBg },
-  headerTitle: { color: '#111', fontSize: 17, fontWeight: '700' },
+  headerTitle: { color: '#111', fontSize: 17, fontFamily: 'Urbanist-Bold' },
   headerSub: { color: '#888', fontSize: 12, marginTop: 1 },
   alertBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: BSColors.errorBorderDark, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  alertBadgeText: { color: BSColors.errorDark, fontSize: 12, fontWeight: '700' },
+  alertBadgeText: { color: BSColors.errorDark, fontSize: 12, fontFamily: 'Urbanist-Bold' },
   content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 40 },
   warningBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: BSColors.errorBg, borderRadius: 12, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: BSColors.errorBorder },
-  warningText: { flex: 1, color: BSColors.errorDark, fontSize: 13, fontWeight: '500' },
-  sectionTitle: { color: '#111', fontSize: 15, fontWeight: '700', marginBottom: 10 },
+  warningText: { flex: 1, color: BSColors.errorDark, fontSize: 13, fontFamily: 'Urbanist-Medium' },
+  sectionTitle: { color: '#111', fontSize: 15, fontFamily: 'Urbanist-Bold', marginBottom: 10 },
   controlGroup: { backgroundColor: BSColors.white, borderRadius: 16, overflow: 'hidden', marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
   controlRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
   controlBorder: { borderBottomWidth: 1, borderBottomColor: BSColors.bgPageNeutral },
   controlIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   controlInfo: { flex: 1, marginRight: 8 },
-  controlLabel: { color: '#111', fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  controlLabel: { color: '#111', fontSize: 14, fontFamily: 'Urbanist-SemiBold', marginBottom: 2 },
   controlDesc: { color: '#888', fontSize: 12 },
   infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: BSColors.infoBg, borderRadius: 12, padding: 14 },
   infoText: { flex: 1, color: BSColors.infoDeep, fontSize: 13 },
 });
+
+export default withShimmer(ControlsTab);
