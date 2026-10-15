@@ -1,21 +1,7 @@
 const express = require('express');
 const { sql } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
-let cloudinary = null;
-try {
-  cloudinary = require('cloudinary').v2;
-  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
-  } else {
-    cloudinary = null; // not configured — skip image deletion
-  }
-} catch {
-  cloudinary = null;
-}
+const { cloudinary } = require('../cloudinary');
 
 const router = express.Router();
 
@@ -23,7 +9,7 @@ const router = express.Router();
 router.get('/profile', authMiddleware, async (req, res) => {
   try {
     const [user] = await sql`
-      SELECT id, full_name, email, role, kyc_status, created_at
+      SELECT id, full_name, email, role, kyc_status, avatar_url, created_at
       FROM users WHERE id = ${req.user.userId}
     `;
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -38,6 +24,7 @@ router.get('/profile', authMiddleware, async (req, res) => {
       email: user.email,
       role: user.role,
       kycStatus: user.kyc_status,
+      avatarUrl: user.avatar_url,
       memberSince: user.created_at,
       account: account || null,
     });
@@ -88,15 +75,12 @@ router.delete('/', authMiddleware, async (req, res) => {
     await sql`DELETE FROM cards WHERE user_id = ${userId}`;
     await sql`DELETE FROM orders WHERE user_id = ${userId}`;
     await sql`DELETE FROM otps WHERE email = (SELECT email FROM users WHERE id = ${userId})`;
-    // Delete Cloudinary profile image if present and Cloudinary is configured
+    // Delete the Cloudinary profile image if one is stored and Cloudinary is configured
     if (cloudinary) {
-      const [profileRow] = await sql`SELECT avatar_url FROM users WHERE id = ${userId}`;
-      if (profileRow?.avatar_url) {
+      const [profileRow] = await sql`SELECT avatar_public_id FROM users WHERE id = ${userId}`;
+      if (profileRow?.avatar_public_id) {
         try {
-          const match = profileRow.avatar_url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z]+)?$/i);
-          if (match?.[1]) {
-            await cloudinary.uploader.destroy(match[1]);
-          }
+          await cloudinary.uploader.destroy(profileRow.avatar_public_id, { invalidate: true });
         } catch (e) {
           console.warn('Cloudinary delete failed (non-fatal):', e?.message);
         }
@@ -108,17 +92,6 @@ router.delete('/', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Delete account error:', err.message);
     res.status(500).json({ error: 'Failed to delete account' });
-  }
-});
-
-// PATCH /account/kyc  — mark KYC as verified
-router.patch('/kyc', authMiddleware, async (req, res) => {
-  try {
-    await sql`UPDATE users SET kyc_status = 'verified' WHERE id = ${req.user.userId}`;
-    res.json({ kycStatus: 'verified' });
-  } catch (err) {
-    console.error('KYC error:', err.message);
-    res.status(500).json({ error: 'An unexpected error occurred. Please try again.' });
   }
 });
 
