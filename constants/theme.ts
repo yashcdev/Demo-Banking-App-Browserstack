@@ -107,6 +107,18 @@ export const Colors = {
   },
 };
 
+// Card themes — dark gradient-style shades used for all bank cards.
+// `slate` is the reference design; other shades follow the same dark, muted treatment.
+export const CARD_THEMES = {
+  slate:  { bg: '#1B2230', circle: 'rgba(255,255,255,0.12)', label: 'rgba(255,255,255,0.65)', text: '#FFFFFF' },
+  navy:   { bg: '#172554', circle: 'rgba(255,255,255,0.12)', label: 'rgba(255,255,255,0.65)', text: '#FFFFFF' },
+  forest: { bg: '#14291F', circle: 'rgba(255,255,255,0.12)', label: 'rgba(255,255,255,0.65)', text: '#FFFFFF' },
+  wine:   { bg: '#2B1520', circle: 'rgba(255,255,255,0.12)', label: 'rgba(255,255,255,0.65)', text: '#FFFFFF' },
+  plum:   { bg: '#241B3A', circle: 'rgba(255,255,255,0.12)', label: 'rgba(255,255,255,0.65)', text: '#FFFFFF' },
+  teal:   { bg: '#12292E', circle: 'rgba(255,255,255,0.12)', label: 'rgba(255,255,255,0.65)', text: '#FFFFFF' },
+} as const;
+export type CardThemeKey = keyof typeof CARD_THEMES;
+
 // Urbanist font family constants — loaded in app/_layout.tsx via expo-font
 export const BSFonts = {
   regular:    'Urbanist-Regular',

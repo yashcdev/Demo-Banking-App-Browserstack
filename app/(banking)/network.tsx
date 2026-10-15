@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { withShimmer } from '@/components/shimmer';
 
 // Measure latency via HEAD requests to fast endpoints (no large downloads)
 // Latency-based classification reflects BrowserStack throttling accurately
@@ -43,7 +44,7 @@ async function measureSpeedMbps(): Promise<number> {
   return 0.2;                          // Extremely slow
 }
 
-export default function NetworkScreen() {
+function NetworkScreen() {
   const { primaryColor } = useTheme();
   const router = useRouter();
   const [online, setOnline] = useState<boolean | null>(null);
@@ -194,22 +195,24 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPage },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: BSColors.white, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
-  pageTitle: { color: BSColors.textPrimary, fontSize: 18, fontWeight: '700' },
+  pageTitle: { color: BSColors.textPrimary, fontSize: 18, fontFamily: 'Urbanist-Bold' },
   content: { flex: 1, paddingHorizontal: 20, paddingTop: 24 },
   statusCard: { borderRadius: 24, padding: 36, alignItems: 'center', marginBottom: 20, borderWidth: 1.5 },
   statusIconWrap: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  statusText: { fontSize: 28, fontWeight: '800', marginBottom: 8 },
+  statusText: { fontSize: 28, fontFamily: 'Urbanist-ExtraBold', marginBottom: 8 },
   statusDesc: { color: BSColors.darkGray, fontSize: 13, textAlign: 'center', lineHeight: 20 },
   infoCard: { backgroundColor: BSColors.white, borderRadius: 18, overflow: 'hidden', marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   infoRowBorder: { borderTopWidth: 1, borderTopColor: BSColors.lightGray },
   infoIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   infoLabel: { flex: 1, color: BSColors.textSecondary, fontSize: 14 },
-  infoValue: { fontSize: 14, fontWeight: '700' },
+  infoValue: { fontSize: 14, fontFamily: 'Urbanist-Bold' },
   qualityBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  qualityText: { fontSize: 13, fontWeight: '700' },
+  qualityText: { fontSize: 13, fontFamily: 'Urbanist-Bold' },
   checkBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingVertical: 16, marginBottom: 12 },
   checkBtnDisabled: { opacity: 0.6 },
-  checkBtnText: { color: BSColors.white, fontSize: 16, fontWeight: '700' },
+  checkBtnText: { color: BSColors.white, fontSize: 16, fontFamily: 'Urbanist-Bold' },
   note: { color: BSColors.darkGray, fontSize: 12, textAlign: 'center' },
 });
+
+export default withShimmer(NetworkScreen);

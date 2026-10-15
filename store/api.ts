@@ -7,6 +7,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // EXPO_PUBLIC_ prefix makes it available at runtime in Expo (no server needed).
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://bs-banking-app.onrender.com';
 
+/** How many people the transfer screen lists as recipients. */
+const RECIPIENT_LIMIT = 5;
+
 // In-memory token cache — avoids async AsyncStorage reads on every request
 let _memToken: string | null = null;
 
@@ -49,16 +52,9 @@ export const api = {
   login: (email: string, password: string) =>
     request<AuthResponse>('POST', '/auth/login', { email, password }, false),
 
-  sendOtp: (email: string) =>
-    request<{ message: string; otp?: string; expiresAt?: string }>('POST', '/auth/send-otp', { email }, false),
-
-  verifyOtp: (email: string, code: string) =>
-    request<{ verified: boolean }>('POST', '/auth/verify-otp', { email, code }, false),
-
   // Account
   getProfile: () => request<ProfileResponse>('GET', '/account/profile'),
   getBalance: () => request<{ balance: number; savings: number; checking: number; currency: string }>('GET', '/account/balance'),
-  markKyc: () => request<{ kycStatus: string }>('PATCH', '/account/kyc'),
 
   // Transactions
   getTransactions: () => request<{ transactions: Transaction[] }>('GET', '/transactions'),
@@ -68,12 +64,21 @@ export const api = {
     request<TransferResponse>('POST', '/transactions/payment', { amount, description }),
 
   // Users (for transfer recipient list — returns a different shape than auth User)
-  getUsers: () => request<{ users: { id: string; name: string; email: string; avatar: string; account: string }[] }>('GET', '/users'),
+  // The server already returns the 5 oldest users; the slice keeps the list short even against an older deployment.
+  getUsers: async () => {
+    const res = await request<{ users: { id: string; name: string; email: string; avatar: string; account: string }[] }>('GET', '/users');
+    return { users: res.users.slice(0, RECIPIENT_LIMIT) };
+  },
 
   // Shop
   placeOrder: (items: { id: string; name: string; price: number; qty: number }[], total: number, description?: string) =>
     request<{ order: Order; transaction: Transaction; newBalance: number }>('POST', '/shop/order', { items, total, description }),
   getOrders: () => request<{ orders: Order[] }>('GET', '/shop/orders'),
+  receiptUrl: (orderId: string) => `${API_URL}/shop/orders/${orderId}/receipt`,
+
+  // Profile photo (stored on Cloudinary; the image is sent as a base64 data URI)
+  uploadAvatar: (image: string) => request<{ avatarUrl: string }>('PUT', '/account/avatar', { image }),
+  deleteAvatar: () => request<{ avatarUrl: null }>('DELETE', '/account/avatar'),
 
   // Cards
   getCards: () => request<{ cards: Card[] }>('GET', '/cards'),

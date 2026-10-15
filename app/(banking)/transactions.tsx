@@ -1,3 +1,4 @@
+import { TransactionShimmer, useShimmerGate } from '@/components/shimmer';
 import { BSColors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { BankStore, Transaction } from '@/store/banking';
@@ -27,6 +28,7 @@ export default function TransactionsScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [balance, setBalance] = useState(BankStore.getBalance());
   const [txLoading, setTxLoading] = useState(BankStore.isLoading());
+  const showShimmer = useShimmerGate(txLoading);
 
   useEffect(() => {
     // Sync real data from API
@@ -83,7 +85,9 @@ export default function TransactionsScreen() {
         </ScrollView>
 
         {/* Transaction List */}
-        {filtered.length === 0 ? (
+        {showShimmer ? (
+          <TransactionShimmer />
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="receipt-outline" size={48} color={primaryBorder} />
             <Text style={styles.emptyText}>No transactions found</Text>
@@ -102,7 +106,7 @@ export default function TransactionsScreen() {
                 <View style={styles.txInfo}>
                   <Text style={styles.txMerchant}>{tx.merchant}</Text>
                   <Text style={styles.txMeta}>{tx.category} · {tx.date}</Text>
-                  {tx.note ? <Text style={styles.txNote}>"{tx.note}"</Text> : null}
+                  {tx.note ? <Text style={styles.txNote}>&quot;{tx.note}&quot;</Text> : null}
                   <Text style={styles.txRef}>{tx.referenceId}</Text>
                 </View>
                 <View style={styles.txRight}>
@@ -128,31 +132,31 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPageAlt },
   content: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
-  pageTitle: { color: BSColors.textPrimary, fontSize: 22, fontWeight: '700', marginBottom: 16 },
+  pageTitle: { color: BSColors.textPrimary, fontSize: 22, fontFamily: 'Urbanist-Bold', marginBottom: 16 },
   summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   summaryCard: { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', gap: 4 },
-  summaryLabel: { color: BSColors.darkGray, fontSize: 11, fontWeight: '600' },
-  summaryValue: { fontSize: 12, fontWeight: '800' },
+  summaryLabel: { color: BSColors.darkGray, fontSize: 11, fontFamily: 'Urbanist-SemiBold' },
+  summaryValue: { fontSize: 12, fontFamily: 'Urbanist-ExtraBold' },
   filterScroll: { marginBottom: 16 },
   filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: BSColors.white, borderWidth: 1.5, borderColor: BSColors.mediumGray },
   filterChipActive: { backgroundColor: BSColors.primary, borderColor: BSColors.primary },
-  filterChipText: { color: BSColors.darkGray, fontSize: 13, fontWeight: '600' },
+  filterChipText: { color: BSColors.darkGray, fontSize: 13, fontFamily: 'Urbanist-SemiBold' },
   filterChipTextActive: { color: BSColors.white },
   txList: { backgroundColor: BSColors.white, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   txRow: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 14 },
   txBorder: { borderBottomWidth: 1, borderBottomColor: BSColors.lightGray },
   txIconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12, marginTop: 2 },
   txInfo: { flex: 1 },
-  txMerchant: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  txMerchant: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-SemiBold', marginBottom: 2 },
   txMeta: { color: BSColors.slate300, fontSize: 12, marginBottom: 2 },
   txNote: { color: BSColors.darkGray, fontSize: 11, fontStyle: 'italic', marginBottom: 2 },
   txRef: { color: BSColors.indigoBorder, fontSize: 10 },
   txRight: { alignItems: 'flex-end', gap: 4 },
-  txAmount: { fontSize: 14, fontWeight: '700' },
+  txAmount: { fontSize: 14, fontFamily: 'Urbanist-Bold' },
   txCredit: { color: BSColors.successDark },
   txDebit: { color: BSColors.errorDark },
   txTypeBadge: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
-  txTypeBadgeText: { fontSize: 10, fontWeight: '700' },
+  txTypeBadgeText: { fontSize: 10, fontFamily: 'Urbanist-Bold' },
   emptyState: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   emptyText: { color: BSColors.slate300, fontSize: 15 },
 });

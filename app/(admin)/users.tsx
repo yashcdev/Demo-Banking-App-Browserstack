@@ -4,6 +4,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Styl
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { BSColors } from '@/constants/theme';
+import { withShimmer } from '@/components/shimmer';
 
 type Status = 'Active' | 'Suspended';
 type User = { id: string; name: string; email: string; accountType: string; balance: number; status: Status; accountNumber: string };
@@ -15,7 +16,7 @@ const INIT_USERS: User[] = [
   { id: '4', name: 'Priya Sharma', email: 'priya.s@example.com', accountType: 'Premium', balance: 52000, status: 'Active', accountNumber: 'ACC-00623-2290' },
 ];
 
-export default function UsersTab() {
+function UsersTab() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>(INIT_USERS);
   const [search, setSearch] = useState('');
@@ -203,60 +204,62 @@ export default function UsersTab() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPageLight },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: BSColors.white, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BSColors.indigoBg },
-  headerTitle: { color: '#111', fontSize: 17, fontWeight: '700' },
+  headerTitle: { color: '#111', fontSize: 17, fontFamily: 'Urbanist-Bold' },
   headerSub: { color: '#888', fontSize: 12, marginTop: 1 },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: BSColors.errorBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  logoutText: { color: BSColors.errorDark, fontSize: 12, fontWeight: '600' },
+  logoutText: { color: BSColors.errorDark, fontSize: 12, fontFamily: 'Urbanist-SemiBold' },
   content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 32 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   statCard: { flex: 1, backgroundColor: BSColors.white, borderRadius: 12, padding: 12, alignItems: 'center', gap: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  statValue: { fontSize: 20, fontWeight: '700' },
+  statValue: { fontSize: 20, fontFamily: 'Urbanist-Bold' },
   statLabel: { color: '#888', fontSize: 11 },
   toolbar: { flexDirection: 'row', gap: 10, marginBottom: 14, alignItems: 'center' },
   searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, gap: 8, borderWidth: 1, borderColor: BSColors.indigoBorder },
   searchInput: { flex: 1, fontSize: 14, color: '#111' },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: BSColors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
-  addBtnText: { color: BSColors.white, fontWeight: '700', fontSize: 14 },
+  addBtnText: { color: BSColors.white, fontFamily: 'Urbanist-Bold', fontSize: 14 },
   userCard: { backgroundColor: BSColors.white, borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   userTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: BSColors.primary, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  avatarText: { color: BSColors.white, fontWeight: '700', fontSize: 13 },
+  avatarText: { color: BSColors.white, fontFamily: 'Urbanist-Bold', fontSize: 13 },
   userInfo: { flex: 1 },
-  userName: { color: '#111', fontSize: 14, fontWeight: '700' },
+  userName: { color: '#111', fontSize: 14, fontFamily: 'Urbanist-Bold' },
   userEmail: { color: '#888', fontSize: 12 },
   userAccNum: { color: '#AAA', fontSize: 11, marginTop: 1 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   badgeActive: { backgroundColor: BSColors.successBgLight },
   badgeSuspended: { backgroundColor: BSColors.errorBorderDark },
-  badgeText: { fontSize: 11, fontWeight: '700' },
+  badgeText: { fontSize: 11, fontFamily: 'Urbanist-Bold' },
   badgeTextActive: { color: BSColors.successDark },
   badgeTextSuspended: { color: BSColors.errorDark },
   userMeta: { flexDirection: 'row', gap: 16, marginBottom: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: BSColors.bgPageNeutral },
   metaItem: { color: '#555', fontSize: 13 },
-  metaLabel: { color: '#888', fontWeight: '600' },
+  metaLabel: { color: '#888', fontFamily: 'Urbanist-SemiBold' },
   userActions: { flexDirection: 'row', gap: 8 },
   btnEdit: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: BSColors.indigoBg, borderRadius: 8, paddingVertical: 7 },
-  btnEditText: { color: BSColors.accent, fontSize: 12, fontWeight: '600' },
+  btnEditText: { color: BSColors.accent, fontSize: 12, fontFamily: 'Urbanist-SemiBold' },
   btnToggle: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 8, paddingVertical: 7 },
   btnSuspend: { backgroundColor: BSColors.warningBg },
   btnActivate: { backgroundColor: BSColors.successBg },
-  btnToggleText: { fontSize: 12, fontWeight: '600' },
+  btnToggleText: { fontSize: 12, fontFamily: 'Urbanist-SemiBold' },
   btnDelete: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: BSColors.errorBg, borderRadius: 8, paddingVertical: 7 },
-  btnDeleteText: { color: BSColors.errorDark, fontSize: 12, fontWeight: '600' },
+  btnDeleteText: { color: BSColors.errorDark, fontSize: 12, fontFamily: 'Urbanist-SemiBold' },
   empty: { alignItems: 'center', paddingVertical: 40, gap: 10 },
   emptyText: { color: '#AAA', fontSize: 14 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modal: { backgroundColor: BSColors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
   modalHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { color: '#111', fontSize: 18, fontWeight: '700' },
+  modalTitle: { color: '#111', fontSize: 18, fontFamily: 'Urbanist-Bold' },
   formGroup: { marginBottom: 16 },
-  formLabel: { color: '#333', fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  formLabel: { color: '#333', fontSize: 13, fontFamily: 'Urbanist-SemiBold', marginBottom: 6 },
   formInput: { backgroundColor: BSColors.white, borderRadius: 10, borderWidth: 1.5, borderColor: BSColors.indigoBorder, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#111' },
   typeRow: { flexDirection: 'row', gap: 8 },
   typeBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center', backgroundColor: BSColors.bgPageNeutral },
   typeBtnActive: { backgroundColor: BSColors.primary },
-  typeBtnText: { color: '#666', fontSize: 13, fontWeight: '600' },
+  typeBtnText: { color: '#666', fontSize: 13, fontFamily: 'Urbanist-SemiBold' },
   typeBtnTextActive: { color: BSColors.white },
   submitBtn: { backgroundColor: BSColors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  submitBtnText: { color: BSColors.white, fontSize: 15, fontWeight: '700' },
+  submitBtnText: { color: BSColors.white, fontSize: 15, fontFamily: 'Urbanist-Bold' },
 });
+
+export default withShimmer(UsersTab);

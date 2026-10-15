@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import { withShimmer } from '@/components/shimmer';
 
-export default function WebViewScreen() {
+function WebViewScreen() {
   const router = useRouter();
   const { primaryColor } = useTheme();
   const params = useLocalSearchParams<{ url?: string; title?: string; html?: string }>();
@@ -155,20 +156,22 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 10, backgroundColor: BSColors.white, borderBottomWidth: 1, borderBottomColor: BSColors.mediumGray },
   iconBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: BSColors.lightGray, alignItems: 'center', justifyContent: 'center' },
   titleWrap: { flex: 1 },
-  title: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '700' },
+  title: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-Bold' },
   urlText: { color: BSColors.darkGray, fontSize: 11, marginTop: 1 },
   secureBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
-  secureText: { fontSize: 10, fontWeight: '700' },
+  secureText: { fontSize: 10, fontFamily: 'Urbanist-Bold' },
   progressBar: { height: 2, backgroundColor: BSColors.lightGray },
   progressFill: { height: 2, width: '60%' },
   webview: { flex: 1 },
   loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: BSColors.bgPage },
   errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 40 },
-  errorTitle: { color: BSColors.textPrimary, fontSize: 18, fontWeight: '700' },
+  errorTitle: { color: BSColors.textPrimary, fontSize: 18, fontFamily: 'Urbanist-Bold' },
   errorSub: { color: BSColors.darkGray, fontSize: 14, textAlign: 'center' },
   retryBtn: { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 12, marginTop: 8 },
-  retryText: { color: BSColors.white, fontSize: 15, fontWeight: '700' },
+  retryText: { color: BSColors.white, fontSize: 15, fontFamily: 'Urbanist-Bold' },
   bottomBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: BSColors.white, borderTopWidth: 1, borderTopColor: BSColors.mediumGray, paddingVertical: 10, paddingBottom: 16 },
   navBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   navBtnDisabled: { opacity: 0.4 },
 });
+
+export default withShimmer(WebViewScreen);

@@ -4,14 +4,15 @@ const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /users — list all users except the current user (for transfer recipient selection)
+// GET /users — the 5 oldest users except the current user (transfer recipients)
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const rows = await sql`
       SELECT id, full_name, email
       FROM users
       WHERE id != ${req.user.userId}
-      ORDER BY full_name ASC
+      ORDER BY created_at ASC
+      LIMIT 5
     `;
     res.json({
       users: rows.map(u => ({

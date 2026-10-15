@@ -1,50 +1,57 @@
-# Welcome to your Expo app 👋
+# BrowserStack Bank
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A demo mobile banking app built with Expo (React Native) and a small Express + Postgres backend.
 
-## Get started
+## Features
+
+- Email/password login and signup, with the session kept across app restarts
+- Dashboard with balance, quick actions and recent transactions
+- Transfers to other users, authorised with biometrics / device passcode
+- Card payments through Stripe (no biometric step)
+- Cards: view, freeze, create and delete
+- Shop for premium watches, wallets and specs
+- Chat, currency by location, network check, shake-to-report, financial news
+- Admin area (users, transactions, controls)
+
+## Project structure
+
+```
+app/            Screens (Expo Router)
+  (banking)/    Tabbed customer screens
+  (admin)/      Admin screens
+components/     Shared UI (shimmer, auth modal, error boundary)
+constants/      Theme and shop catalogue
+hooks/          Shared hooks
+store/          API client and app state (Zustand)
+types/          Shared TypeScript types
+utils/          Validation, logging, default font
+server/         Express API (routes, middleware, schema)
+plugins/        Expo config plugins
+```
+
+## Getting started
 
 1. Install dependencies
 
    ```bash
-   npm install
+   npm run install:all
    ```
 
-2. Start the app
+2. Copy `.env.example` to `.env` and fill in the values.
+
+3. Start the API server
 
    ```bash
-   npx expo start
+   npm run server
    ```
 
-In the output, you'll find options to open the app in a
+4. Run the app (a development build is required — native modules such as Stripe are not available in Expo Go)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```bash
+   npm run android   # or: npm run ios
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Notes
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Shop product images are remote stock photos listed in `constants/products.ts`.
+- Card shades live in `constants/theme.ts` (`CARD_THEMES`).

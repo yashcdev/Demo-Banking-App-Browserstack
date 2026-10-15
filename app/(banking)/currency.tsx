@@ -203,7 +203,7 @@ export default function RegionScreen() {
             <View style={styles.noteCard}>
               <Ionicons name="information-circle-outline" size={16} color={BSColors.info} />
               <Text style={styles.noteText}>
-                Region data is fetched live from your device's public IP address. Results reflect your current network location.
+                Region data is fetched live from your device&apos;s public IP address. Results reflect your current network location.
               </Text>
             </View>
           </>
@@ -217,26 +217,26 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPage },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 },
   backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: BSColors.white, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
-  pageTitle: { color: BSColors.textPrimary, fontSize: 18, fontWeight: '800' },
+  pageTitle: { color: BSColors.textPrimary, fontSize: 18, fontFamily: 'Urbanist-ExtraBold' },
   refreshBtn: { width: 38, height: 38 },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
   heroCard: { borderRadius: 24, padding: 32, alignItems: 'center', marginBottom: 24, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
   heroFlag: { fontSize: 56, marginBottom: 8 },
-  heroCode: { color: BSColors.white, fontSize: 28, fontWeight: '800', letterSpacing: 1, textAlign: 'center' },
-  heroSub: { color: 'rgba(255,255,255,0.85)', fontSize: 15, fontWeight: '500', marginBottom: 16, textAlign: 'center' },
+  heroCode: { color: BSColors.white, fontSize: 28, fontFamily: 'Urbanist-ExtraBold', letterSpacing: 1, textAlign: 'center' },
+  heroSub: { color: 'rgba(255,255,255,0.85)', fontSize: 15, fontFamily: 'Urbanist-Medium', marginBottom: 16, textAlign: 'center' },
   heroBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
   heroBadgeText: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
-  sectionTitle: { color: BSColors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 12 },
+  sectionTitle: { color: BSColors.textPrimary, fontSize: 15, fontFamily: 'Urbanist-Bold', marginBottom: 12 },
   infoCard: { backgroundColor: BSColors.white, borderRadius: 18, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, marginBottom: 16 },
   infoRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   infoRowBorder: { borderBottomWidth: 1, borderBottomColor: BSColors.lightGray },
   infoIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   infoContent: { flex: 1 },
-  infoLabel: { color: BSColors.darkGray, fontSize: 11, fontWeight: '600', marginBottom: 2 },
-  infoValue: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '600' },
+  infoLabel: { color: BSColors.darkGray, fontSize: 11, fontFamily: 'Urbanist-SemiBold', marginBottom: 2 },
+  infoValue: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-SemiBold' },
   noteCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: BSColors.primaryBg, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: BSColors.primaryBorder },
   noteText: { color: BSColors.textSecondary, fontSize: 12, flex: 1, lineHeight: 18 },
   errorCard: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  errorText: { color: BSColors.textPrimary, fontSize: 16, fontWeight: '700' },
+  errorText: { color: BSColors.textPrimary, fontSize: 16, fontFamily: 'Urbanist-Bold' },
   errorSub: { color: BSColors.darkGray, fontSize: 13 },
 });

@@ -2,7 +2,7 @@ import { TransactionAuthModal } from '@/components/TransactionAuthModal';
 import { RecipientShimmer } from '@/components/shimmer';
 import { BSColors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { api } from '@/store/api';
+import { API_URL, api } from '@/store/api';
 import { BankStore } from '@/store/banking';
 import { Ionicons } from '@expo/vector-icons';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const API_URL = 'https://bs-banking-app.onrender.com';
 const QUICK_AMOUNTS = [50, 100, 250, 500];
 
 type Tab = 'send' | 'pay';
@@ -37,9 +36,8 @@ export default function TransferScreen() {
   const [lastTx, setLastTx] = useState<{ amount: string; name: string; ref: string } | null>(null);
   const [sendError, setSendError] = useState('');
 
-  // Transaction auth modal
+  // Biometric auth applies to normal transfers only; Stripe card payments go straight to the payment sheet
   const [showAuth, setShowAuth] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'send' | 'pay' | null>(null);
 
   // Stripe Pay state — recipient + amount shared above
   const [payDesc, setPayDesc] = useState('');
@@ -76,7 +74,6 @@ export default function TransferScreen() {
     if (!amount || isNaN(amt) || amt <= 0) { setSendError('Please enter a valid amount.'); return; }
     if (!BankStore.canAfford(amt)) { setSendError(`Insufficient balance. Available: $${BankStore.getBalance().toLocaleString()}`); return; }
     setSendError('');
-    setPendingAction('send');
     setShowAuth(true);
   };
 
@@ -137,12 +134,7 @@ export default function TransferScreen() {
     }
   };
 
-  const handlePresent = () => {
-    setPendingAction('pay');
-    setShowAuth(true);
-  };
-
-  const executePresent = async () => {
+  const handlePresent = async () => {
     const { error } = await presentPaymentSheet();
     if (error) {
       if (error.code !== 'Canceled') setPayError('Transaction could not be completed. ' + error.message);
@@ -331,11 +323,6 @@ export default function TransferScreen() {
               </View>
             ) : null}
 
-            <View style={styles.infoCard}>
-              <Ionicons name="information-circle-outline" size={15} color={BSColors.info} />
-              <Text style={styles.infoText}>Requires server: <Text style={styles.infoCode}>cd server && npm start</Text></Text>
-            </View>
-
             {!payReady ? (
               <TouchableOpacity
                 style={[styles.primaryBtn, { backgroundColor: primaryColor, shadowColor: primaryColor }, payLoading && styles.btnDisabled]}
@@ -394,7 +381,7 @@ export default function TransferScreen() {
             </View>
             <Text style={styles.modalTitle}>Transfer Successful!</Text>
             <Text style={styles.modalSubtitle}>${lastTx?.amount} sent to {lastTx?.name}</Text>
-            {remarks ? <Text style={styles.modalRemarks}>"{remarks}"</Text> : null}
+            {remarks ? <Text style={styles.modalRemarks}>&quot;{remarks}&quot;</Text> : null}
             <View style={styles.modalRef}>
               <Text style={styles.modalRefLabel}>Reference ID</Text>
               <Text style={styles.modalRefValue}>{lastTx?.ref}</Text>
@@ -415,18 +402,14 @@ export default function TransferScreen() {
       <TransactionAuthModal
         visible={showAuth}
         amount={amount ? `$${parseFloat(amount).toFixed(2)}` : undefined}
-        description={pendingAction === 'send' ? `to ${recipient?.name}` : 'card payment'}
+        description={`to ${recipient?.name}`}
         onSuccess={() => {
           setShowAuth(false);
-          if (pendingAction === 'send') executeSend();
-          else if (pendingAction === 'pay') executePresent();
-          setPendingAction(null);
+          executeSend();
         }}
         onCancel={() => {
           setShowAuth(false);
-          setPendingAction(null);
-          if (pendingAction === 'send') setSendError('Transaction could not be completed.');
-          else if (pendingAction === 'pay') setPayError('Transaction could not be completed.');
+          setSendError('Transaction could not be completed.');
         }}
       />
     </SafeAreaView>
@@ -437,35 +420,35 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPage },
   tabRow: { flexDirection: 'row', margin: 16, backgroundColor: BSColors.lightGray, borderRadius: 14, padding: 4, gap: 4 },
   tabBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 11, borderRadius: 11 },
-  tabBtnText: { fontSize: 13, fontWeight: '700' },
+  tabBtnText: { fontSize: 13, fontFamily: 'Urbanist-Bold' },
   balanceBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 4, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1 },
   balanceBannerText: { color: BSColors.textSecondary, fontSize: 13 },
-  balanceBannerAmt: { fontWeight: '700' },
+  balanceBannerAmt: { fontFamily: 'Urbanist-Bold' },
   container: { flex: 1 },
   content: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
 
   pageTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 24 },
   pageTitleIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  pageTitle: { color: BSColors.textPrimary, fontSize: 20, fontWeight: '800' },
+  pageTitle: { color: BSColors.textPrimary, fontSize: 20, fontFamily: 'Urbanist-ExtraBold' },
   pageSubtitle: { color: BSColors.darkGray, fontSize: 13, marginTop: 2 },
 
-  label: { color: BSColors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 10, marginTop: 4 },
+  label: { color: BSColors.textSecondary, fontSize: 13, fontFamily: 'Urbanist-SemiBold', marginBottom: 10, marginTop: 4 },
   recipientList: { gap: 10, marginBottom: 20 },
   recipientCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: BSColors.mediumGray, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: BSColors.lightGray, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  avatarText: { color: BSColors.darkGray, fontSize: 14, fontWeight: '700' },
+  avatarText: { color: BSColors.darkGray, fontSize: 14, fontFamily: 'Urbanist-Bold' },
   recipientInfo: { flex: 1 },
-  recipientName: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  recipientName: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-SemiBold', marginBottom: 2 },
   recipientAccount: { color: BSColors.slate300, fontSize: 12 },
   emptyRecipients: { alignItems: 'center', paddingVertical: 24, gap: 10 },
   emptyRecipientsText: { color: BSColors.slate300, fontSize: 13, textAlign: 'center' },
 
   amountRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, borderRadius: 14, borderWidth: 1.5, borderColor: BSColors.primaryBorder, paddingHorizontal: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
-  currencySymbol: { color: BSColors.textSecondary, fontSize: 24, fontWeight: '700', marginRight: 8 },
-  amountInput: { flex: 1, fontSize: 28, fontWeight: '700', color: BSColors.textPrimary, paddingVertical: 16 },
+  currencySymbol: { color: BSColors.textSecondary, fontSize: 24, fontFamily: 'Urbanist-Bold', marginRight: 8 },
+  amountInput: { flex: 1, fontSize: 28, fontFamily: 'Urbanist-Bold', color: BSColors.textPrimary, paddingVertical: 16 },
   quickAmounts: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   quickPill: { flex: 1, paddingVertical: 9, borderRadius: 10, backgroundColor: BSColors.white, alignItems: 'center', borderWidth: 1.5, borderColor: BSColors.primaryBorder },
-  quickPillText: { color: BSColors.textSecondary, fontSize: 13, fontWeight: '600' },
+  quickPillText: { color: BSColors.textSecondary, fontSize: 13, fontFamily: 'Urbanist-SemiBold' },
 
   remarksInput: { backgroundColor: BSColors.white, borderRadius: 14, borderWidth: 1.5, borderColor: BSColors.mediumGray, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, color: BSColors.textPrimary, marginBottom: 20 },
 
@@ -473,36 +456,36 @@ const styles = StyleSheet.create({
   errorCardText: { color: BSColors.error, fontSize: 13, flex: 1 },
 
   primaryBtn: { borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 4, marginBottom: 8 },
-  primaryBtnText: { color: BSColors.white, fontSize: 16, fontWeight: '700' },
+  primaryBtnText: { color: BSColors.white, fontSize: 16, fontFamily: 'Urbanist-Bold' },
   btnDisabled: { opacity: 0.6 },
 
   stripeBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BSColors.successBg, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, alignSelf: 'center', marginBottom: 20, borderWidth: 1, borderColor: BSColors.successBorder },
-  stripeBadgeText: { fontSize: 12, fontWeight: '600' },
+  stripeBadgeText: { fontSize: 12, fontFamily: 'Urbanist-SemiBold' },
 
   infoCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: BSColors.primaryBg, borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: BSColors.primaryBorder },
   infoText: { color: BSColors.blueDark, fontSize: 12, flex: 1 },
-  infoCode: { fontWeight: '700' },
+  infoCode: { fontFamily: 'Urbanist-Bold' },
 
   testCards: { marginTop: 20, backgroundColor: BSColors.lightGray, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: BSColors.mediumGray },
-  testCardsTitle: { color: BSColors.textPrimary, fontSize: 13, fontWeight: '700', marginBottom: 12 },
+  testCardsTitle: { color: BSColors.textPrimary, fontSize: 13, fontFamily: 'Urbanist-Bold', marginBottom: 12 },
   testCardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   testCardNum: { color: BSColors.textSecondary, fontSize: 12, fontFamily: 'monospace' },
   testCardBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  testCardLabel: { fontSize: 11, fontWeight: '700' },
+  testCardLabel: { fontSize: 11, fontFamily: 'Urbanist-Bold' },
   testCardNote: { color: BSColors.slate300, fontSize: 11, marginTop: 6 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard: { backgroundColor: BSColors.white, borderRadius: 28, padding: 32, width: '100%', alignItems: 'center' },
   successIconWrap: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  modalTitle: { color: BSColors.textPrimary, fontSize: 22, fontWeight: '800', marginBottom: 8 },
+  modalTitle: { color: BSColors.textPrimary, fontSize: 22, fontFamily: 'Urbanist-ExtraBold', marginBottom: 8 },
   modalSubtitle: { color: BSColors.textSecondary, fontSize: 15, textAlign: 'center', marginBottom: 8 },
   modalRemarks: { color: BSColors.slate300, fontSize: 13, fontStyle: 'italic', marginBottom: 16 },
   modalRef: { backgroundColor: BSColors.lightGray, borderRadius: 12, padding: 14, width: '100%', alignItems: 'center', marginBottom: 10 },
   modalRefLabel: { color: BSColors.slate300, fontSize: 12, marginBottom: 4 },
-  modalRefValue: { color: BSColors.textPrimary, fontSize: 15, fontWeight: '700' },
+  modalRefValue: { color: BSColors.textPrimary, fontSize: 15, fontFamily: 'Urbanist-Bold' },
   modalBalanceRow: { borderRadius: 12, padding: 14, width: '100%', alignItems: 'center', marginBottom: 24 },
   modalBalanceLabel: { color: BSColors.darkGray, fontSize: 12, marginBottom: 4 },
-  modalBalanceValue: { fontSize: 20, fontWeight: '800' },
+  modalBalanceValue: { fontSize: 20, fontFamily: 'Urbanist-ExtraBold' },
   doneBtn: { borderRadius: 14, paddingVertical: 14, paddingHorizontal: 48 },
-  doneBtnText: { color: BSColors.white, fontSize: 16, fontWeight: '700' },
+  doneBtnText: { color: BSColors.white, fontSize: 16, fontFamily: 'Urbanist-Bold' },
 });

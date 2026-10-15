@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Urbanist-Bold',
     color: BSColors.textPrimary,
     marginBottom: 10,
     textAlign: 'center',
@@ -96,6 +96,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: BSColors.white,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Urbanist-Bold',
   },
 });
