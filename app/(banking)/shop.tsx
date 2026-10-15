@@ -1,4 +1,6 @@
+import { withShimmer } from '@/components/shimmer';
 import { TransactionAuthModal } from '@/components/TransactionAuthModal';
+import { PRODUCTS, SHOP_CATEGORIES } from '@/constants/products';
 import { BSColors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api, API_URL } from '@/store/api';
@@ -25,22 +27,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const { width: SW } = Dimensions.get('window');
 const CARD_W = (SW - 48 - 12) / 2; // 2-column grid
 
-const CATEGORIES = ['All', 'Electronics', 'Footwear', 'Kitchen', 'Accessories', 'Bags'];
-
-const PRODUCTS = [
-  { id: 'p1', name: 'Wireless Headphones', price: 79.99, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80', category: 'Electronics', rating: 4.5, reviews: 1240 },
-  { id: 'p2', name: 'Running Shoes', price: 129.99, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80', category: 'Footwear', rating: 4.8, reviews: 856 },
-  { id: 'p3', name: 'Coffee Maker', price: 49.99, image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80', category: 'Kitchen', rating: 4.3, reviews: 432 },
-  { id: 'p4', name: 'Sunglasses', price: 59.99, image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&q=80', category: 'Accessories', rating: 4.6, reviews: 678 },
-  { id: 'p5', name: 'Backpack', price: 89.99, image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80', category: 'Bags', rating: 4.7, reviews: 923 },
-  { id: 'p6', name: 'Smart Watch', price: 199.99, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80', category: 'Electronics', rating: 4.9, reviews: 2100 },
-  { id: 'p7', name: 'Bluetooth Speaker', price: 59.99, image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&q=80', category: 'Electronics', rating: 4.4, reviews: 540 },
-  { id: 'p8', name: 'Yoga Mat', price: 34.99, image: 'https://images.unsplash.com/photo-1601925228008-f5e4c5e5e5e5?w=600&q=80', category: 'Accessories', rating: 4.2, reviews: 310 },
-];
+const CATEGORIES = SHOP_CATEGORIES;
 
 type CartMap = Record<string, number>;
 
-export default function ShopScreen() {
+function ShopScreen() {
   const { primaryColor } = useTheme();
   const router = useRouter();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -89,7 +80,8 @@ export default function ShopScreen() {
     return matchCat && matchSearch;
   });
 
-  const handleCheckout = () => {
+  // Pay from account balance — requires biometric / passcode
+  const handleBalanceCheckout = () => {
     if (cartCount === 0) return;
     if (!BankStore.canAfford(cartTotal)) {
       setCheckoutError(`Insufficient balance. Available: $${BankStore.getBalance().toLocaleString()}`);
@@ -97,6 +89,36 @@ export default function ShopScreen() {
     }
     setCheckoutError('');
     setShowAuth(true);
+  };
+
+  // After a successful order: empty the cart and show the receipt screen.
+  const showReceipt = (orderId: string) => {
+    setCart({});
+    setShowCart(false);
+    router.push({ pathname: '/(banking)/receipt' as any, params: { orderId } });
+  };
+
+  const executeBalanceCheckout = async () => {
+    setCheckoutLoading(true);
+    setCheckoutError('');
+    try {
+      const orderItems = cartItems.map(({ product, qty }) => ({
+        id: product.id, name: product.name, price: product.price, qty,
+      }));
+      const { order } = await api.placeOrder(orderItems, cartTotal, `Shop: ${cartItems.map(i => i.product.name).join(', ')}`);
+      BankStore.sync().catch(() => {});
+      showReceipt(order.id);
+    } catch (err: any) {
+      setCheckoutError(err.message || 'Checkout failed. Please try again.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  // Pay by card via Stripe — goes straight to the payment sheet, no biometric step
+  const handleCheckout = async () => {
+    if (cartCount === 0) return;
+    await executeCheckout();
   };
 
   const executeCheckout = async () => {
@@ -130,19 +152,21 @@ export default function ShopScreen() {
           id: product.id, name: product.name, price: product.price, qty,
         }));
         try {
-          await api.placeOrder(orderItems, cartTotal, `Shop: ${cartItems.map(i => i.product.name).join(', ')}`);
+          const { order } = await api.placeOrder(orderItems, cartTotal, `Shop: ${cartItems.map(i => i.product.name).join(', ')}`);
           BankStore.sync().catch(() => {});
+          showReceipt(order.id);
         } catch {
-          // Fallback: record locally if server unavailable
+          // The card was charged but the order could not be saved: record the payment locally.
+          // There is no order record, so there is no receipt to show — say so instead of hiding it.
           await BankStore.recordPayment(cartTotal, `Shop: ${cartItems.map(i => i.product.name).join(', ')}`);
+          setCart({});
+          setShowCart(false);
+          Alert.alert(
+            'Payment received',
+            `$${cartTotal.toFixed(2)} was paid, but we could not create your order receipt. Please contact support with your payment confirmation.`,
+            [{ text: 'OK' }]
+          );
         }
-        setCart({});
-        setShowCart(false);
-        Alert.alert(
-          'Order Placed!',
-          `$${cartTotal.toFixed(2)} paid successfully.\n${cartCount} item${cartCount > 1 ? 's' : ''} will be delivered soon.`,
-          [{ text: 'Continue Shopping' }]
-        );
       }
     } catch (err: any) {
       setCheckoutError(err.message || 'Checkout failed. Please try again.');
@@ -322,7 +346,18 @@ export default function ShopScreen() {
           ) : (
             <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
               {orders.map((order: any) => (
-                <View key={order.id} style={styles.orderCard}>
+                <TouchableOpacity
+                  key={order.id}
+                  style={styles.orderCard}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setShowOrders(false);
+                    router.push({ pathname: '/(banking)/receipt' as any, params: { orderId: order.id } });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View receipt for order ${order.referenceId}`}
+                  testID={`order-card-${order.referenceId}`}
+                >
                   <View style={styles.orderCardTop}>
                     <View style={[styles.orderStatusBadge, { backgroundColor: primaryColor + '15' }]}>
                       <Text style={[styles.orderStatusText, { color: primaryColor }]}>{order.status}</Text>
@@ -339,7 +374,8 @@ export default function ShopScreen() {
                     <Text style={styles.orderTotalLabel}>Total paid</Text>
                     <Text style={[styles.orderTotalValue, { color: primaryColor }]}>${order.total?.toFixed(2)}</Text>
                   </View>
-                </View>
+                  <Text style={{ color: primaryColor, fontSize: 12, fontFamily: 'Urbanist-SemiBold', marginTop: 8 }}>View receipt</Text>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           )}
@@ -413,11 +449,15 @@ export default function ShopScreen() {
                 ) : null}
                 <View style={styles.balanceRow}>
                   <Ionicons name="wallet-outline" size={14} color={BSColors.darkGray} />
-                  <Text style={styles.balanceText}>Balance: <Text style={{ color: primaryColor, fontWeight: '700' }}>${BankStore.getBalance().toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text></Text>
+                  <Text style={styles.balanceText}>Balance: <Text style={{ color: primaryColor, fontFamily: 'Urbanist-Bold' }}>${BankStore.getBalance().toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text></Text>
                 </View>
                 <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: primaryColor }, checkoutLoading && { opacity: 0.7 }]} onPress={handleCheckout} disabled={checkoutLoading} testID="checkout-btn">
                   {checkoutLoading ? <ActivityIndicator color="#fff" style={{ marginRight: 8 }} /> : <Ionicons name="lock-closed-outline" size={18} color="#fff" style={{ marginRight: 8 }} />}
-                  <Text style={styles.checkoutBtnText}>{checkoutLoading ? 'Processing...' : `Pay $${cartTotal.toFixed(2)}`}</Text>
+                  <Text style={styles.checkoutBtnText}>{checkoutLoading ? 'Processing...' : `Pay $${cartTotal.toFixed(2)} by Card`}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.balanceBtn, { borderColor: primaryColor }, checkoutLoading && { opacity: 0.7 }]} onPress={handleBalanceCheckout} disabled={checkoutLoading} testID="balance-checkout-btn">
+                  <Ionicons name="wallet-outline" size={18} color={primaryColor} style={{ marginRight: 8 }} />
+                  <Text style={[styles.balanceBtnText, { color: primaryColor }]}>Pay from Balance</Text>
                 </TouchableOpacity>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center' }}><Ionicons name="lock-closed-outline" size={13} color={BSColors.textSecondary} /><Text style={styles.secureNote}>Secured by Stripe</Text></View>
               </View>
@@ -430,7 +470,7 @@ export default function ShopScreen() {
         visible={showAuth}
         amount={`$${cartTotal.toFixed(2)}`}
         description={`${cartCount} item${cartCount !== 1 ? 's' : ''}`}
-        onSuccess={() => { setShowAuth(false); executeCheckout(); }}
+        onSuccess={() => { setShowAuth(false); executeBalanceCheckout(); }}
         onCancel={() => { setShowAuth(false); setCheckoutError('Transaction could not be completed.'); }}
       />
     </SafeAreaView>
@@ -441,86 +481,90 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPage },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10, gap: 12 },
   backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: BSColors.white, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
-  pageTitle: { color: BSColors.textPrimary, fontSize: 18, fontWeight: '800' },
+  pageTitle: { color: BSColors.textPrimary, fontSize: 18, fontFamily: 'Urbanist-ExtraBold' },
   pageSubtitle: { color: BSColors.darkGray, fontSize: 12 },
   cartBtn: { marginLeft: 'auto', width: 42, height: 42, borderRadius: 14, backgroundColor: BSColors.white, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
   cartBadge: { position: 'absolute', top: -4, right: -4, borderRadius: 10, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: BSColors.bgPage },
-  cartBadgeText: { color: BSColors.white, fontSize: 10, fontWeight: '800' },
+  cartBadgeText: { color: BSColors.white, fontSize: 10, fontFamily: 'Urbanist-ExtraBold' },
   searchRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, marginHorizontal: 20, marginBottom: 12, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: BSColors.mediumGray },
   searchInput: { flex: 1, fontSize: 14, color: BSColors.textPrimary },
   catFilterWrap: { flexShrink: 0 },
   catRow: { paddingHorizontal: 20, paddingBottom: 12, gap: 8, flexDirection: 'row' },
   catChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: BSColors.white, borderWidth: 1.5, borderColor: BSColors.mediumGray, flexShrink: 0 },
-  catChipText: { color: BSColors.textSecondary, fontSize: 12, fontWeight: '600' },
+  catChipText: { color: BSColors.textSecondary, fontSize: 12, fontFamily: 'Urbanist-SemiBold' },
   gridScroll: { flex: 1 },
   grid: { paddingHorizontal: 20 },
   gridRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   productCard: { width: CARD_W, backgroundColor: BSColors.white, borderRadius: 18, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 },
   productImage: { width: '100%', height: 140, backgroundColor: BSColors.lightGray },
   catBadge: { position: 'absolute', top: 10, left: 10, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  catBadgeText: { fontSize: 10, fontWeight: '700' },
+  catBadgeText: { fontSize: 10, fontFamily: 'Urbanist-Bold' },
   productInfo: { padding: 12 },
-  productName: { color: BSColors.textPrimary, fontSize: 13, fontWeight: '700', marginBottom: 6, lineHeight: 18 },
+  productName: { color: BSColors.textPrimary, fontSize: 13, fontFamily: 'Urbanist-Bold', marginBottom: 6, lineHeight: 18 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
   stars: { color: BSColors.warning, fontSize: 12 },
   ratingText: { color: BSColors.darkGray, fontSize: 11 },
-  productPrice: { fontSize: 16, fontWeight: '800', marginBottom: 10 },
+  productPrice: { fontSize: 16, fontFamily: 'Urbanist-ExtraBold', marginBottom: 10 },
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   qtyBtn: { width: 30, height: 30, borderRadius: 9, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  qtyText: { color: BSColors.textPrimary, fontSize: 15, fontWeight: '800', minWidth: 20, textAlign: 'center' },
+  qtyText: { color: BSColors.textPrimary, fontSize: 15, fontFamily: 'Urbanist-ExtraBold', minWidth: 20, textAlign: 'center' },
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 10, paddingVertical: 8 },
-  addBtnText: { color: BSColors.white, fontSize: 13, fontWeight: '700' },
+  addBtnText: { color: BSColors.white, fontSize: 13, fontFamily: 'Urbanist-Bold' },
   emptyState: { alignItems: 'center', paddingVertical: 60, gap: 12, width: '100%' },
   emptyStateText: { color: BSColors.darkGray, fontSize: 15 },
   floatingCart: { position: 'absolute', bottom: 20, left: 20, right: 20, borderRadius: 18, paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 14, elevation: 8 },
   floatingCartLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   floatingCartBadge: { width: 28, height: 28, borderRadius: 9, backgroundColor: BSColors.white, alignItems: 'center', justifyContent: 'center' },
-  floatingCartBadgeText: { fontSize: 13, fontWeight: '800' },
-  floatingCartLabel: { color: BSColors.white, fontSize: 15, fontWeight: '700' },
-  floatingCartTotal: { color: BSColors.white, fontSize: 15, fontWeight: '800', marginRight: 8 },
+  floatingCartBadgeText: { fontSize: 13, fontFamily: 'Urbanist-ExtraBold' },
+  floatingCartLabel: { color: BSColors.white, fontSize: 15, fontFamily: 'Urbanist-Bold' },
+  floatingCartTotal: { color: BSColors.white, fontSize: 15, fontFamily: 'Urbanist-ExtraBold', marginRight: 8 },
   cartModal: { flex: 1, backgroundColor: BSColors.bgPage },
   cartHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: BSColors.mediumGray },
-  cartTitle: { color: BSColors.textPrimary, fontSize: 20, fontWeight: '800' },
+  cartTitle: { color: BSColors.textPrimary, fontSize: 20, fontFamily: 'Urbanist-ExtraBold' },
   cartCloseBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: BSColors.lightGray, alignItems: 'center', justifyContent: 'center' },
   emptyCart: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 40 },
-  emptyCartTitle: { color: BSColors.textPrimary, fontSize: 18, fontWeight: '700' },
+  emptyCartTitle: { color: BSColors.textPrimary, fontSize: 18, fontFamily: 'Urbanist-Bold' },
   emptyCartSub: { color: BSColors.darkGray, fontSize: 14 },
   continueShoppingBtn: { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 12, marginTop: 8 },
-  continueShoppingText: { color: BSColors.white, fontSize: 15, fontWeight: '700' },
+  continueShoppingText: { color: BSColors.white, fontSize: 15, fontFamily: 'Urbanist-Bold' },
   cartList: { flex: 1, paddingHorizontal: 20, paddingTop: 12 },
   cartItem: { flexDirection: 'row', backgroundColor: BSColors.white, borderRadius: 16, padding: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   cartItemImage: { width: 72, height: 72, borderRadius: 12, backgroundColor: BSColors.lightGray },
   cartItemInfo: { flex: 1, paddingHorizontal: 12 },
-  cartItemName: { color: BSColors.textPrimary, fontSize: 13, fontWeight: '600', marginBottom: 4, lineHeight: 18 },
-  cartItemPrice: { fontSize: 13, fontWeight: '700', marginBottom: 8 },
+  cartItemName: { color: BSColors.textPrimary, fontSize: 13, fontFamily: 'Urbanist-SemiBold', marginBottom: 4, lineHeight: 18 },
+  cartItemPrice: { fontSize: 13, fontFamily: 'Urbanist-Bold', marginBottom: 8 },
   cartQtyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cartQtyBtn: { width: 26, height: 26, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  cartQtyText: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '700', minWidth: 18, textAlign: 'center' },
+  cartQtyText: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-Bold', minWidth: 18, textAlign: 'center' },
   cartItemRight: { alignItems: 'flex-end', justifyContent: 'space-between' },
-  cartItemTotal: { fontSize: 15, fontWeight: '800' },
+  cartItemTotal: { fontSize: 15, fontFamily: 'Urbanist-ExtraBold' },
   cartRemoveBtn: { padding: 4 },
   orderSummary: { backgroundColor: BSColors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 8 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   summaryLabel: { color: BSColors.darkGray, fontSize: 14 },
-  summaryValue: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '600' },
+  summaryValue: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-SemiBold' },
   summaryTotal: { borderTopWidth: 1, borderTopColor: BSColors.mediumGray, paddingTop: 12, marginTop: 4, marginBottom: 14 },
-  summaryTotalLabel: { color: BSColors.textPrimary, fontSize: 16, fontWeight: '700' },
-  summaryTotalValue: { fontSize: 20, fontWeight: '800' },
+  summaryTotalLabel: { color: BSColors.textPrimary, fontSize: 16, fontFamily: 'Urbanist-Bold' },
+  summaryTotalValue: { fontSize: 20, fontFamily: 'Urbanist-ExtraBold' },
   checkoutError: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: BSColors.errorBg, borderRadius: 10, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: BSColors.errorBorder },
   checkoutErrorText: { color: BSColors.error, fontSize: 12, flex: 1 },
   balanceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 },
   balanceText: { color: BSColors.darkGray, fontSize: 13 },
   checkoutBtn: { borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  checkoutBtnText: { color: BSColors.white, fontSize: 16, fontWeight: '700' },
+  balanceBtn: { borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10, borderWidth: 1.5, backgroundColor: BSColors.white },
+  balanceBtnText: { fontSize: 15, fontFamily: 'Urbanist-Bold' },
+  checkoutBtnText: { color: BSColors.white, fontSize: 16, fontFamily: 'Urbanist-Bold' },
   secureNote: { color: BSColors.darkGray, fontSize: 12, textAlign: 'center' },
   orderCard: { backgroundColor: BSColors.white, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   orderCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   orderStatusBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  orderStatusText: { fontSize: 12, fontWeight: '700' },
+  orderStatusText: { fontSize: 12, fontFamily: 'Urbanist-Bold' },
   orderDate: { color: BSColors.darkGray, fontSize: 12 },
   orderRef: { color: BSColors.darkGray, fontSize: 11, marginBottom: 4 },
   orderItem: { color: BSColors.textSecondary, fontSize: 13, marginBottom: 2 },
   orderTotal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: BSColors.lightGray },
   orderTotalLabel: { color: BSColors.darkGray, fontSize: 13 },
-  orderTotalValue: { fontSize: 16, fontWeight: '800' },
+  orderTotalValue: { fontSize: 16, fontFamily: 'Urbanist-ExtraBold' },
 });
+
+export default withShimmer(ShopScreen);

@@ -1,5 +1,5 @@
-import { TransactionAuthModal } from '@/components/TransactionAuthModal';
 import { BSColors } from '@/constants/theme';
+import { API_URL } from '@/store/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useStripe } from '@stripe/stripe-react-native';
 import { useRouter } from 'expo-router';
@@ -7,7 +7,6 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  InteractionManager,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,11 +15,11 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { withShimmer } from '@/components/shimmer';
 
-const API_URL = 'https://bs-banking-app.onrender.com';
 const QUICK_AMOUNTS = [5, 10, 25, 50];
 
-export default function PaymentScreen() {
+function PaymentScreen() {
   const router = useRouter();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [loading, setLoading] = useState(false);
@@ -28,7 +27,6 @@ export default function PaymentScreen() {
   const [amount, setAmount] = useState('10.99');
   const [description, setDescription] = useState('');
   const [serverError, setServerError] = useState('');
-  const [showAuth, setShowAuth] = useState(false);
 
   const fetchAndInit = async (amountCents: number) => {
     setLoading(true);
@@ -55,7 +53,7 @@ export default function PaymentScreen() {
 
       if (error) { setServerError(error.message); } else { setReady(true); }
     } catch (err: any) {
-      setServerError(err.message || 'Could not connect to payment server. Make sure the server is running.');
+      setServerError(err.message || 'Could not connect to the payment service. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -67,11 +65,7 @@ export default function PaymentScreen() {
     await fetchAndInit(cents);
   };
 
-  const handlePresent = () => {
-    setShowAuth(true);
-  };
-
-  const executePresent = async () => {
+  const handlePresent = async () => {
     const { error } = await presentPaymentSheet();
     if (error) {
       if (error.code !== 'Canceled') setServerError('Transaction could not be completed. ' + error.message);
@@ -149,13 +143,6 @@ export default function PaymentScreen() {
           </View>
         ) : null}
 
-        <View style={s.infoCard}>
-          <Ionicons name="information-circle-outline" size={15} color="#0891B2" />
-          <Text style={s.infoText}>
-            Start the server first: <Text style={s.infoCode}>cd server && npm install && npm start</Text>
-          </Text>
-        </View>
-
         {!ready ? (
           <TouchableOpacity style={[s.payBtn, loading && s.payBtnDisabled]} onPress={handleProceed} disabled={loading} testID="init-pay-btn">
             {loading ? <ActivityIndicator color="#fff" style={{ marginRight: 8 }} /> : <Ionicons name="card-outline" size={18} color="#fff" style={{ marginRight: 8 }} />}
@@ -184,17 +171,6 @@ export default function PaymentScreen() {
         </View>
       </ScrollView>
 
-      <TransactionAuthModal
-        visible={showAuth}
-        amount={`$${parseFloat(amount || '0').toFixed(2)}`}
-        description={description || 'payment'}
-        onSuccess={() => {
-          setShowAuth(false);
-          // Wait for the modal close animation to finish before presenting Stripe sheet
-          InteractionManager.runAfterInteractions(() => { executePresent(); });
-        }}
-        onCancel={() => { setShowAuth(false); setServerError('Transaction could not be completed.'); }}
-      />
     </SafeAreaView>
   );
 }
@@ -204,39 +180,38 @@ const s = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: BSColors.white, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
-  headerTitle: { color: '#111', fontSize: 17, fontWeight: '700' },
+  headerTitle: { color: '#111', fontSize: 17, fontFamily: 'Urbanist-Bold' },
   stripeBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BSColors.successBg, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, alignSelf: 'center', marginBottom: 24, borderWidth: 1, borderColor: BSColors.successBorder },
-  stripeBadgeText: { color: BSColors.successDark, fontSize: 12, fontWeight: '600' },
-  label: { color: '#333', fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  stripeBadgeText: { color: BSColors.successDark, fontSize: 12, fontFamily: 'Urbanist-SemiBold' },
+  label: { color: '#333', fontSize: 14, fontFamily: 'Urbanist-SemiBold', marginBottom: 8 },
   amountRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white, borderRadius: 14, borderWidth: 1.5, borderColor: BSColors.indigoBorder, paddingHorizontal: 16, marginBottom: 12 },
-  currencySymbol: { color: '#333', fontSize: 26, fontWeight: '700', marginRight: 8 },
-  amountInput: { flex: 1, fontSize: 30, fontWeight: '700', color: '#111', paddingVertical: 14 },
+  currencySymbol: { color: '#333', fontSize: 26, fontFamily: 'Urbanist-Bold', marginRight: 8 },
+  amountInput: { flex: 1, fontSize: 30, fontFamily: 'Urbanist-Bold', color: '#111', paddingVertical: 14 },
   quickAmounts: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   quickPill: { flex: 1, paddingVertical: 8, borderRadius: 10, backgroundColor: BSColors.white, alignItems: 'center', borderWidth: 1, borderColor: BSColors.indigoBorder },
   quickPillActive: { backgroundColor: BSColors.primary, borderColor: BSColors.primary },
-  quickPillText: { color: '#555', fontSize: 13, fontWeight: '600' },
+  quickPillText: { color: '#555', fontSize: 13, fontFamily: 'Urbanist-SemiBold' },
   quickPillTextActive: { color: BSColors.white },
   descInput: { backgroundColor: BSColors.white, borderRadius: 12, borderWidth: 1.5, borderColor: BSColors.indigoBorder, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#111', marginBottom: 20 },
   summaryCard: { backgroundColor: BSColors.white, borderRadius: 14, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   summaryLabel: { color: '#888', fontSize: 14 },
-  summaryValue: { color: '#333', fontSize: 14, fontWeight: '500' },
+  summaryValue: { color: '#333', fontSize: 14, fontFamily: 'Urbanist-Medium' },
   summaryTotal: { borderTopWidth: 1, borderTopColor: BSColors.borderLight, paddingTop: 10, marginBottom: 0 },
-  summaryTotalLabel: { color: '#111', fontSize: 15, fontWeight: '700' },
-  summaryTotalValue: { color: BSColors.primary, fontSize: 16, fontWeight: '800' },
+  summaryTotalLabel: { color: '#111', fontSize: 15, fontFamily: 'Urbanist-Bold' },
+  summaryTotalValue: { color: BSColors.primary, fontSize: 16, fontFamily: 'Urbanist-ExtraBold' },
   errorCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: BSColors.errorBg, borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: BSColors.errorBorder },
   errorText: { flex: 1, color: BSColors.errorDark, fontSize: 13 },
-  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: BSColors.infoBg, borderRadius: 10, padding: 12, marginBottom: 16 },
-  infoText: { flex: 1, color: BSColors.infoDeep, fontSize: 12 },
-  infoCode: { fontWeight: '700' },
   payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: BSColors.primary, borderRadius: 14, paddingVertical: 16, marginBottom: 20, shadowColor: BSColors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   payBtnReady: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: BSColors.successDark, borderRadius: 14, paddingVertical: 16, marginBottom: 20, shadowColor: BSColors.successDark, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   payBtnDisabled: { opacity: 0.6 },
-  payBtnText: { color: BSColors.white, fontSize: 16, fontWeight: '700' },
+  payBtnText: { color: BSColors.white, fontSize: 16, fontFamily: 'Urbanist-Bold' },
   testCards: { backgroundColor: BSColors.white, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: BSColors.indigoBorder },
-  testCardsTitle: { color: '#333', fontSize: 13, fontWeight: '700', marginBottom: 10 },
+  testCardsTitle: { color: '#333', fontSize: 13, fontFamily: 'Urbanist-Bold', marginBottom: 10 },
   testCardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   testCardNum: { color: '#555', fontSize: 12 },
-  testCardLabel: { color: '#888', fontSize: 11, fontWeight: '600' },
+  testCardLabel: { color: '#888', fontSize: 11, fontFamily: 'Urbanist-SemiBold' },
   testCardNote: { color: '#AAA', fontSize: 11, marginTop: 6 },
 });
+
+export default withShimmer(PaymentScreen);
