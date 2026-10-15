@@ -62,6 +62,8 @@ export default function BankingLayout() {
         name="home"
         options={{
           title: 'Home',
+          tabBarButtonTestID: 'tab-home',
+          tabBarAccessibilityLabel: 'Home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={greenMode ? size + 6 : size} color={color} />,
         }}
       />
@@ -69,6 +71,8 @@ export default function BankingLayout() {
         name="transfer"
         options={{
           title: 'Transfer',
+          tabBarButtonTestID: 'tab-transfer',
+          tabBarAccessibilityLabel: 'Transfer',
           tabBarIcon: ({ color, size }) => <Ionicons name="swap-horizontal" size={greenMode ? size + 6 : size} color={color} />,
         }}
       />
@@ -76,6 +80,8 @@ export default function BankingLayout() {
         name="cards"
         options={{
           title: 'Cards',
+          tabBarButtonTestID: 'tab-cards',
+          tabBarAccessibilityLabel: 'Cards',
           tabBarIcon: ({ color, size }) => <Ionicons name="card" size={greenMode ? size + 6 : size} color={color} />,
         }}
       />
@@ -83,6 +89,8 @@ export default function BankingLayout() {
         name="transactions"
         options={{
           title: 'Transactions',
+          tabBarButtonTestID: 'tab-transactions',
+          tabBarAccessibilityLabel: 'Transactions',
           tabBarIcon: ({ color, size }) => <Ionicons name="list" size={greenMode ? size + 6 : size} color={color} />,
         }}
       />
@@ -90,6 +98,8 @@ export default function BankingLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          tabBarButtonTestID: 'tab-profile',
+          tabBarAccessibilityLabel: 'Profile',
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={greenMode ? size + 6 : size} color={color} />,
         }}
       />

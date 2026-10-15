@@ -155,12 +155,13 @@ export default function HomeScreen() {
     : 'Region';
 
   const QUICK_ACTIONS = [
-    { label: 'Chat', icon: 'chatbubbles-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/chat' as any) },
-    { label: 'Scan QR', icon: 'qr-code-outline' as const, color: BSColors.errorDark, bg: '#DC262615', onPress: openQRScanner },
-    { label: 'Shop', icon: 'bag-outline' as const, color: BSColors.successDark, bg: '#05966915', onPress: () => router.push('/(banking)/shop' as any) },
-    { label: 'Network', icon: 'wifi-outline' as const, color: BSColors.infoDark, bg: '#0891B215', onPress: () => router.push('/(banking)/network' as any) },
-    { label: 'Shake', icon: 'phone-portrait-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/testfeatures' as any) },
+    { id: 'chat', label: 'Chat', icon: 'chatbubbles-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/chat' as any) },
+    { id: 'scan-qr', label: 'Scan QR', icon: 'qr-code-outline' as const, color: BSColors.errorDark, bg: '#DC262615', onPress: openQRScanner },
+    { id: 'shop', label: 'Shop', icon: 'bag-outline' as const, color: BSColors.successDark, bg: '#05966915', onPress: () => router.push('/(banking)/shop' as any) },
+    { id: 'network', label: 'Network', icon: 'wifi-outline' as const, color: BSColors.infoDark, bg: '#0891B215', onPress: () => router.push('/(banking)/network' as any) },
+    { id: 'shake', label: 'Shake', icon: 'phone-portrait-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/testfeatures' as any) },
     {
+      id: 'region',
       label: currencyLabel,
       icon: 'globe-outline' as const,
       color: accentColor,
@@ -274,7 +275,7 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActions}>
           {QUICK_ACTIONS.map(action => (
-            <TouchableOpacity key={action.label} style={styles.quickAction} onPress={action.onPress} accessibilityLabel={action.label} accessibilityRole="button">
+            <TouchableOpacity key={action.id} style={styles.quickAction} onPress={action.onPress} testID={`quick-action-${action.id}`} accessibilityLabel={action.label} accessibilityRole="button">
               <View style={[styles.quickActionIcon, { backgroundColor: action.bg }]}>
                 {action.label === currencyLabel && ipLoading
                   ? <ActivityIndicator size="small" color={action.color} />

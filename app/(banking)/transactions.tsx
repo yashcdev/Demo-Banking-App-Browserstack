@@ -78,7 +78,7 @@ export default function TransactionsScreen() {
         {/* Filters */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={{ gap: 8, paddingHorizontal: 2 }}>
           {FILTERS.map(f => (
-            <TouchableOpacity key={f} style={[styles.filterChip, activeFilter === f && styles.filterChipActive]} onPress={() => setActiveFilter(f)} accessibilityLabel={`Filter by ${f}`} accessibilityRole="button" accessibilityState={{ selected: activeFilter === f }}>
+            <TouchableOpacity key={f} style={[styles.filterChip, activeFilter === f && styles.filterChipActive]} onPress={() => setActiveFilter(f)} testID={`filter-${f.toLowerCase().replace(/\s+/g, "-")}`} accessibilityLabel={`Filter by ${f}`} accessibilityRole="button" accessibilityState={{ selected: activeFilter === f }}>
               <Text style={[styles.filterChipText, activeFilter === f && styles.filterChipTextActive]}>{f}</Text>
             </TouchableOpacity>
           ))}

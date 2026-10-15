@@ -1,6 +1,6 @@
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { BSColors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
 
 export default function AdminLayout() {
   return (
@@ -24,6 +24,8 @@ export default function AdminLayout() {
         name="users"
         options={{
           title: 'Users',
+          tabBarButtonTestID: 'tab-admin-users',
+          tabBarAccessibilityLabel: 'Users',
           tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
         }}
       />
@@ -31,6 +33,8 @@ export default function AdminLayout() {
         name="transactions"
         options={{
           title: 'Transactions',
+          tabBarButtonTestID: 'tab-admin-transactions',
+          tabBarAccessibilityLabel: 'Transactions',
           tabBarIcon: ({ color, size }) => <Ionicons name="swap-horizontal" size={size} color={color} />,
         }}
       />
@@ -38,6 +42,8 @@ export default function AdminLayout() {
         name="controls"
         options={{
           title: 'Controls',
+          tabBarButtonTestID: 'tab-admin-controls',
+          tabBarAccessibilityLabel: 'Controls',
           tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
         }}
       />
