@@ -5,7 +5,6 @@
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 export type UserRole = 'user' | 'admin';
-export type AuthFlow = 'login' | 'signup';
 export type KycStatus = 'pending' | 'verified' | 'rejected';
 
 export interface User {
@@ -19,12 +18,6 @@ export interface User {
   avatar?: string;
   avatarUrl?: string;
   account?: string;
-}
-
-export interface FlowConfig {
-  biometric: boolean;
-  fileUpload: boolean;
-  cameraInjection: boolean;
 }
 
 // ── Transactions ──────────────────────────────────────────────────────────────
@@ -81,7 +74,11 @@ export interface Order {
   items: OrderItem[];
   total: number;
   description?: string;
-  createdAt: string;
+  createdAt?: string;
+  // Returned by the shop endpoints
+  status?: string;
+  referenceId?: string;
+  date?: string;
 }
 
 // ── Messages ──────────────────────────────────────────────────────────────────

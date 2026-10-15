@@ -3,9 +3,8 @@ import { api } from '@/store/api';
 import { AuthStore } from '@/store/auth';
 import { firstError, validateEmail, validateRequired } from '@/utils/validation';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Redirect, useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -26,11 +25,6 @@ export default function LoginScreen() {
   const autoFillRegular = () => { setEmail('yash@gmail.com'); setPassword('12345678'); setError(''); };
   const autoFillWrong = () => { setEmail('yash@gmail.com'); setPassword('wrongpass'); setError(''); };
 
-  // Load biometric preference on mount
-  useEffect(() => {
-    AuthStore.loadBiometricEnabled();
-  }, []);
-
   const handleLogin = async () => {
     const validationError = firstError(
       validateEmail(email),
@@ -41,17 +35,9 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const res = await api.login(email, password);
-      await AuthStore.setToken(res.token);
-      AuthStore.setUser(res.user);
-      AuthStore.setRole(res.user.role as any);
-      AuthStore.setFlow('login');
+      await AuthStore.setSession(res.token, res.user);
       AuthStore.setEmail(email);
-      const biometricEnabled = AuthStore.getBiometricEnabled();
-      if (biometricEnabled) {
-        router.replace('/biometric' as any);
-      } else {
-        router.replace(res.user.role === 'admin' ? '/(admin)/users' as any : '/(banking)/home' as any);
-      }
+      router.replace(res.user.role === 'admin' ? '/(admin)/users' as any : '/(banking)/home' as any);
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Please try again.');
     } finally {
@@ -59,14 +45,15 @@ export default function LoginScreen() {
     }
   };
 
+  // A session restored at startup skips the login screen entirely (no flash, no extra request).
+  const savedUser = AuthStore.getUser();
+  if (savedUser) {
+    return <Redirect href={(savedUser.role === 'admin' ? '/(admin)/users' : '/(banking)/home') as any} />;
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Image source={require('@/assets/images/bstack-bank-logo.png')} style={styles.logo} contentFit="contain" testID="bs-logo" />
-        </View>
 
         <Text style={styles.title}>Welcome Back</Text>
         <Text style={styles.subtitle}>Sign in to your account</Text>
@@ -145,27 +132,25 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BSColors.bgPageAlt },
   container: { flex: 1, backgroundColor: BSColors.bgPageAlt },
-  content: { paddingHorizontal: 28, paddingTop: 48, paddingBottom: 32 },
-  logoContainer: { alignItems: 'center', marginBottom: 36 },
-  logo: { width: 200, height: 54 },
-  title: { color: BSColors.textPrimary, fontSize: 28, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
-  subtitle: { color: BSColors.darkGray, fontSize: 15, textAlign: 'center', marginBottom: 36 },
+  content: { paddingHorizontal: 28, paddingTop: 72, paddingBottom: 32 },
+  title: { color: BSColors.textPrimary, fontSize: 28, fontFamily: 'Urbanist-Bold', textAlign: 'center', marginBottom: 8 },
+  subtitle: { color: BSColors.darkGray, fontSize: 15, fontFamily: 'Urbanist-Regular', textAlign: 'center', marginBottom: 36 },
   inputGroup: { marginBottom: 20 },
-  label: { color: BSColors.slate700, fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  label: { color: BSColors.slate700, fontSize: 14, fontFamily: 'Urbanist-SemiBold', marginBottom: 8 },
   input: {
     backgroundColor: BSColors.white, borderRadius: 12, borderWidth: 1.5,
     borderColor: BSColors.indigoBorder, paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 15, color: BSColors.textPrimary,
+    fontSize: 15, fontFamily: 'Urbanist-Medium', color: BSColors.textPrimary,
   },
   passwordRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: BSColors.white,
     borderRadius: 12, borderWidth: 1.5, borderColor: BSColors.indigoBorder,
   },
   passwordInput: {
-    flex: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, color: BSColors.textPrimary,
+    flex: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, fontFamily: 'Urbanist-Medium', color: BSColors.textPrimary,
   },
   eyeBtn: { paddingHorizontal: 14, paddingVertical: 14 },
-  error: { color: BSColors.errorDark, fontSize: 13, marginBottom: 14, textAlign: 'center' },
+  error: { color: BSColors.errorDark, fontSize: 13, fontFamily: 'Urbanist-Medium', marginBottom: 14, textAlign: 'center' },
   primaryBtn: {
     backgroundColor: BSColors.primary, borderRadius: 12, paddingVertical: 16,
     alignItems: 'center', flexDirection: 'row', justifyContent: 'center',
@@ -173,17 +158,17 @@ const styles = StyleSheet.create({
     shadowColor: BSColors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
   primaryBtnDisabled: { opacity: 0.6 },
-  primaryBtnText: { color: BSColors.white, fontSize: 16, fontWeight: '700' },
+  primaryBtnText: { color: BSColors.white, fontSize: 16, fontFamily: 'Urbanist-Bold' },
   linkRow: { marginBottom: 36 },
-  linkText: { color: BSColors.darkGray, textAlign: 'center', fontSize: 14 },
-  link: { color: BSColors.primary, fontWeight: '700' },
+  linkText: { color: BSColors.darkGray, textAlign: 'center', fontSize: 14, fontFamily: 'Urbanist-Medium' },
+  link: { color: BSColors.primary, fontFamily: 'Urbanist-Bold' },
   mockBar: {
     backgroundColor: BSColors.indigoBg, borderRadius: 14, padding: 16,
     borderWidth: 1.5, borderColor: BSColors.indigoBorder, marginTop: 8,
   },
-  mockBarTitle: { color: BSColors.primary, fontWeight: '700', fontSize: 11, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
+  mockBarTitle: { color: BSColors.primary, fontFamily: 'Urbanist-Bold', fontSize: 11, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
   mockButtons: { flexDirection: 'row', gap: 8 },
   mockBtn: { flex: 1, backgroundColor: BSColors.primary, borderRadius: 8, paddingVertical: 9, alignItems: 'center' },
   mockBtnWrong: { backgroundColor: BSColors.slate300 },
-  mockBtnText: { color: BSColors.white, fontSize: 11, fontWeight: '600' },
+  mockBtnText: { color: BSColors.white, fontSize: 11, fontFamily: 'Urbanist-SemiBold' },
 });

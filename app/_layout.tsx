@@ -1,5 +1,7 @@
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BSColors } from '@/constants/theme';
+import { AuthStore } from '@/store/auth';
+import { applyDefaultFont } from '@/utils/default-font';
 import {
   Urbanist_400Regular,
   Urbanist_500Medium,
@@ -10,10 +12,14 @@ import {
 } from '@expo-google-fonts/urbanist';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { Stack, useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LogBox, Platform } from 'react-native';
 import 'react-native-reanimated';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
+applyDefaultFont();
 
 // Suppress known third-party library warnings that are not actionable
 LogBox.ignoreLogs([
@@ -32,58 +38,24 @@ export default function RootLayout() {
     'Urbanist-ExtraBold': Urbanist_800ExtraBold,
   });
   const router = useRouter();
+  const [sessionChecked, setSessionChecked] = useState(false);
   const notifListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
 
-  // Persistent login — restore token from AsyncStorage on cold start
+  // Persistent login — restore the saved session before the first screen shows.
+  // The login screen redirects to the dashboard when a session exists.
   useEffect(() => {
     (async () => {
       try {
-        const { AuthStore } = await import('@/store/auth');
-        // Don't auto-login if user is mid-signup flow
-        if (AuthStore.getFlow() === 'signup') return;
-        const token = await AuthStore.loadToken();
-        if (token) {
-          // Validate token is not expired by decoding it (no verify — just check exp)
-          const parts = token.split('.');
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1]));
-            const isExpired = payload.exp && payload.exp * 1000 < Date.now();
-            if (!isExpired) {
-              // Restore user info from API
-              const { api } = await import('@/store/api');
-              api.setMemToken(token);
-              try {
-                const profile = await api.getProfile();
-                if (profile) {
-                  AuthStore.setUser({ id: profile.id, fullName: profile.fullName, email: profile.email, role: profile.role ?? 'user', kycStatus: profile.kycStatus ?? 'pending' });
-                  AuthStore.setRole(profile.role === 'admin' ? 'admin' : 'user');
-                }
-              } catch { /* use token without profile */ }
-              // Only auto-route on a clean login flow.
-              // If the user backed out of biometric mid-login, the token was
-              // already cleared in biometric.tsx handleBack(), so this branch
-              // won't be reached. This guard is an extra safety net.
-              if (AuthStore.getFlow() !== 'signup') {
-                // Load persisted biometric preference before deciding where to go.
-                await AuthStore.loadBiometricEnabled();
-                const biometricEnabled = AuthStore.getBiometricEnabled();
-                if (biometricEnabled) {
-                  router.replace('/biometric' as any);
-                } else {
-                  const role = AuthStore.getRole();
-                  router.replace(role === 'admin' ? '/(admin)/users' as any : '/(banking)/home' as any);
-                }
-              }
-              return;
-            }
-          }
-          // Token expired — clear it
-          await AuthStore.clearToken();
-        }
-      } catch { /* ignore restore errors */ }
+        await Promise.all([AuthStore.loadBiometricEnabled(), AuthStore.restoreSession()]);
+      } catch { /* fall through to login screen */ }
+      setSessionChecked(true);
     })();
   }, []);
+
+  useEffect(() => {
+    if (fontsLoaded && sessionChecked) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded, sessionChecked]);
 
   useEffect(() => {
     let mounted = true;
@@ -91,7 +63,6 @@ export default function RootLayout() {
     (async () => {
       try {
         const Notifications = await import('expo-notifications');
-        const Constants = (await import('expo-constants')).default;
 
         // Show banners when app is foregrounded
         Notifications.setNotificationHandler({
@@ -104,7 +75,6 @@ export default function RootLayout() {
           }),
         });
 
-        // Android notification channel
         if (Platform.OS === 'android') {
           await Notifications.setNotificationChannelAsync('default', {
             name: 'default',
@@ -114,18 +84,10 @@ export default function RootLayout() {
           });
         }
 
-        // Request permission
         const { status: existing } = await Notifications.getPermissionsAsync();
-        let finalStatus = existing;
-        if (existing !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
+        if (existing !== 'granted') await Notifications.requestPermissionsAsync();
 
         // Token registration is handled in (banking)/_layout.tsx after login
-        // so the auth token is available when calling the server
-
-        // Listeners
         notifListener.current = Notifications.addNotificationReceivedListener(() => {});
         responseListener.current = Notifications.addNotificationResponseReceivedListener((response: any) => {
           const data = response?.notification?.request?.content?.data;
@@ -138,18 +100,13 @@ export default function RootLayout() {
 
     // Deep-link handler: demobankingapp://verified → profile verified state
     const { Linking } = require('react-native') as typeof import('react-native');
-    const handleDeepLink = ({ url }: { url: string }) => {
-      if (!mounted) return;
-      if (url.startsWith('demobankingapp://verified')) {
-        router.push({ pathname: '/(banking)/profile' as any, params: { deeplink_verified: '1' } });
-      }
-    };
-    const linkingSub = Linking.addEventListener('url', handleDeepLink);
-    // Handle cold-start deep link
+    const openVerified = () =>
+      router.push({ pathname: '/(banking)/profile' as any, params: { deeplink_verified: '1' } });
+    const linkingSub = Linking.addEventListener('url', ({ url }: { url: string }) => {
+      if (mounted && url.startsWith('demobankingapp://verified')) openVerified();
+    });
     Linking.getInitialURL().then((url: string | null) => {
-      if (url && url.startsWith('demobankingapp://verified') && mounted) {
-        router.push({ pathname: '/(banking)/profile' as any, params: { deeplink_verified: '1' } });
-      }
+      if (url && url.startsWith('demobankingapp://verified') && mounted) openVerified();
     }).catch(() => {});
 
     return () => {
@@ -160,19 +117,16 @@ export default function RootLayout() {
     };
   }, []);
 
+  if (!fontsLoaded || !sessionChecked) return null;
+
   return (
     <ErrorBoundary>
       <StripeProvider publishableKey={STRIPE_PK} merchantIdentifier="merchant.com.browserstackbank" urlScheme="demobankingapp">
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="signup" options={{ headerShown: false }} />
-          <Stack.Screen name="otp" options={{ headerShown: false }} />
-          <Stack.Screen name="biometric" options={{ headerShown: false, gestureEnabled: false }} />
-          <Stack.Screen name="liveness" options={{ headerShown: false }} />
-          <Stack.Screen name="kyc" options={{ headerShown: false }} />
-          <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-          <Stack.Screen name="(banking)" options={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="signup" />
+          <Stack.Screen name="(admin)" />
+          <Stack.Screen name="(banking)" />
         </Stack>
         <StatusBar style="light" />
       </StripeProvider>

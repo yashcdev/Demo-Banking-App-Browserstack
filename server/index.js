@@ -12,10 +12,13 @@ const userRoutes = require('./routes/users');
 const shopRoutes = require('./routes/shop');
 const messageRoutes = require('./routes/messages');
 const pushTokenRoutes = require('./routes/push-tokens');
+const avatarRoutes = require('./routes/avatar');
+const receiptRoutes = require('./routes/receipt');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// Large enough for a base64 profile photo (see MAX_IMAGE_CHARS in routes/avatar.js)
+app.use(express.json({ limit: '10mb' }));
 
 const PORT = process.env.PORT || 3000;
 
@@ -23,10 +26,12 @@ const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => res.json({ status: 'BrowserStack Bank Server running' }));
 
 app.use('/auth', authRoutes);
+app.use('/account/avatar', avatarRoutes);
 app.use('/account', accountRoutes);
 app.use('/transactions', transactionRoutes);
 app.use('/cards', cardRoutes);
 app.use('/users', userRoutes);
+app.use('/shop/orders', receiptRoutes);
 app.use('/shop', shopRoutes);
 app.use('/messages', messageRoutes);
 app.use('/push-tokens', pushTokenRoutes);
@@ -75,8 +80,6 @@ async function start() {
       console.log(`   Running on http://localhost:${PORT}`);
       console.log(`   POST /auth/signup       — register user`);
       console.log(`   POST /auth/login        — login`);
-      console.log(`   POST /auth/send-otp     — send OTP`);
-      console.log(`   POST /auth/verify-otp   — verify OTP`);
       console.log(`   GET  /account/profile   — user profile`);
       console.log(`   GET  /account/balance   — account balance`);
       console.log(`   GET  /transactions      — transaction history`);

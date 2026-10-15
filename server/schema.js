@@ -13,6 +13,10 @@ async function createSchema() {
     )
   `;
 
+  // Profile photo — URL for display, public id so the image can be deleted from Cloudinary
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_public_id TEXT`;
+
   await sql`
     CREATE TABLE IF NOT EXISTS accounts (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
