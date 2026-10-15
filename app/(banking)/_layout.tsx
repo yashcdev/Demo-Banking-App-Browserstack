@@ -55,7 +55,7 @@ export default function BankingLayout() {
         tabBarItemStyle: {
           paddingVertical: 2,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: 'Urbanist-SemiBold' },
       }}
     >
       <Tabs.Screen
@@ -98,14 +98,10 @@ export default function BankingLayout() {
       <Tabs.Screen name="network" options={{ href: null }} />
       <Tabs.Screen name="shake" options={{ href: null }} />
       <Tabs.Screen name="shop" options={{ href: null }} />
+      <Tabs.Screen name="receipt" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="currency" options={{ href: null }} />
       <Tabs.Screen name="chat" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="webview" options={{ href: null }} />
-      <Tabs.Screen name="coming-soon" options={{ href: null }} />
-      <Tabs.Screen name="local-app" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="a11y" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="agents" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="visual" options={{ href: null, tabBarStyle: { display: 'none' } }} />
     </Tabs>
   );
 }

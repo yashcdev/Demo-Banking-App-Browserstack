@@ -1,16 +1,15 @@
 import { BalanceShimmer, TransactionShimmer } from '@/components/shimmer';
-import { BSColors } from '@/constants/theme';
+import { BSColors, CARD_THEMES } from '@/constants/theme';
 import { AuthStore } from '@/store/auth';
 import { BankStore } from '@/store/banking';
 import { ThemeStore } from '@/store/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { scanFromURLAsync } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Animated,
+  ActivityIndicator, Alert,
   Modal, ScrollView,
   StyleSheet, Switch, Text,
   TouchableOpacity, View
@@ -22,16 +21,14 @@ const IP_GEO_URL = 'http://ip-api.com/json/?fields=status,country,countryCode,re
 
 export default function HomeScreen() {
   const router = useRouter();
-  // Balance visibility — protected by passcode once per session
   const [balanceVisible, setBalanceVisible] = useState(false);
-  const [balanceUnlockedThisSession, setBalanceUnlockedThisSession] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [, setScanned] = useState(false);
   const [qrResult, setQrResult] = useState<string | null>(null);
   const [balance, setBalance] = useState(BankStore.getBalance());
   const [recentTxs, setRecentTxs] = useState(BankStore.getTransactions().slice(0, 4));
   const [greenMode, setGreenMode] = useState(ThemeStore.isGreenMode());
-  const [userName, setUserName] = useState(AuthStore.getUser()?.fullName || 'Welcome');
+  const [userName, setUserName] = useState(AuthStore.getUser()?.fullName || '');
   const [dataLoading, setDataLoading] = useState(BankStore.isLoading());
   const [showNotifs, setShowNotifs] = useState(false);
 
@@ -45,21 +42,6 @@ export default function HomeScreen() {
 
   const primaryColor = greenMode ? BSColors.successDark : BSColors.primary;
   const accentColor = greenMode ? BSColors.success : BSColors.accent;
-
-  // Card metallic shimmer — sweeps every 2.5s
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(shimmerAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
-        Animated.delay(1500),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [shimmerAnim]);
-  const shimmerTranslate = shimmerAnim.interpolate({ inputRange: [0, 1], outputRange: [-300, 400] });
 
   useEffect(() => {
     BankStore.sync().then(() => setDataLoading(false)).catch(() => setDataLoading(false));
@@ -159,43 +141,6 @@ export default function HomeScreen() {
     setShowQRModal(true);
   }, []);
 
-  // Balance eye-icon handler — uses device passcode via LocalAuthentication
-  // When biometric is disabled app-wide, skip auth and show balance directly.
-  const handleBalanceToggle = async () => {
-    if (balanceVisible) {
-      // User manually hides — require passcode again next time
-      setBalanceVisible(false);
-      setBalanceUnlockedThisSession(false);
-    } else {
-      if (balanceUnlockedThisSession) {
-        setBalanceVisible(true);
-      } else {
-        const biometricEnabled = AuthStore.getBiometricEnabled();
-        if (!biometricEnabled) {
-          setBalanceUnlockedThisSession(true);
-          setBalanceVisible(true);
-          return;
-        }
-        try {
-          // Do NOT skip based on isEnrolled — on BrowserStack the passcode executor
-          // handles this. disableDeviceFallback: false shows the device passcode
-          // prompt (PIN/pattern/password) as the primary method for this flow.
-          const result = await LocalAuthentication.authenticateAsync({
-            promptMessage: 'Enter your device passcode to view balance',
-            cancelLabel: 'Cancel',
-            disableDeviceFallback: false,
-          });
-          if (result.success) {
-            setBalanceUnlockedThisSession(true);
-            setBalanceVisible(true);
-          }
-        } catch {
-          // Authentication failed or not available — do nothing
-        }
-      }
-    }
-  };
-
   const handleThemeToggle = () => {
     const next = !ThemeStore.isGreenMode();
     ThemeStore.toggle();
@@ -210,11 +155,9 @@ export default function HomeScreen() {
     : 'Region';
 
   const QUICK_ACTIONS = [
-    { label: 'Transfer', icon: 'swap-horizontal' as const, color: primaryColor, bg: primaryColor + '15', onPress: () => router.push('/(banking)/transfer' as any) },
     { label: 'Chat', icon: 'chatbubbles-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/chat' as any) },
     { label: 'Scan QR', icon: 'qr-code-outline' as const, color: BSColors.errorDark, bg: '#DC262615', onPress: openQRScanner },
     { label: 'Shop', icon: 'bag-outline' as const, color: BSColors.successDark, bg: '#05966915', onPress: () => router.push('/(banking)/shop' as any) },
-    // { label: 'Upload Doc', icon: 'document-attach-outline' as const, color: '#D97706', bg: '#D9770615', onPress: () => router.push('/kyc' as any) },
     { label: 'Network', icon: 'wifi-outline' as const, color: BSColors.infoDark, bg: '#0891B215', onPress: () => router.push('/(banking)/network' as any) },
     { label: 'Shake', icon: 'phone-portrait-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/testfeatures' as any) },
     {
@@ -233,8 +176,8 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-          <Text style={styles.greeting}>{greenMode ? 'Good green,' : 'Good morning,'}</Text>
-          <Text style={styles.userName}>{userName} <Ionicons name={greenMode ? 'leaf-outline' : 'hand-left-outline'} size={20} /></Text>
+          <Text style={styles.greeting}>Welcome</Text>
+          <Text style={styles.userName}>{userName}</Text>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.locationBadge} onPress={async () => {
@@ -285,12 +228,8 @@ export default function HomeScreen() {
         </View>
 
         {/* Balance Card — shifts slightly left+top in green mode (Percy visual diff use-case) */}
-        <View style={[styles.balanceCard, { backgroundColor: primaryColor }, greenMode && styles.balanceCardGreen]}>
-          {/* Metallic shimmer sweep */}
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.cardShimmerOverlay, { transform: [{ translateX: shimmerTranslate }] }]}
-          />
+        <View style={[styles.balanceCard, { backgroundColor: CARD_THEMES.slate.bg }, greenMode && styles.balanceCardGreen]}>
+          <View pointerEvents="none" style={[styles.cardCircle, { backgroundColor: CARD_THEMES.slate.circle }]} />
           {dataLoading ? <BalanceShimmer /> : (
             <>
               <View style={styles.balanceCardTop}>
@@ -298,7 +237,7 @@ export default function HomeScreen() {
                   <Text style={styles.balanceLabel}>Total Balance</Text>
                   <Text style={styles.balanceCurrency}>USD</Text>
                 </View>
-                <TouchableOpacity onPress={handleBalanceToggle} style={styles.eyeBtn} testID="balance-eye-btn" accessibilityLabel={balanceVisible ? 'Hide balance' : 'Show balance — requires passcode'} accessibilityRole="button">
+                <TouchableOpacity onPress={() => setBalanceVisible(v => !v)} style={styles.eyeBtn} testID="balance-eye-btn" accessibilityLabel={balanceVisible ? 'Hide balance' : 'Show balance'} accessibilityRole="button">
                   <Ionicons name={balanceVisible ? 'eye-outline' : 'eye-off-outline'} size={22} color="rgba(255,255,255,0.85)" />
                 </TouchableOpacity>
               </View>
@@ -343,43 +282,6 @@ export default function HomeScreen() {
                 }
               </View>
               <Text style={styles.quickActionLabel} numberOfLines={1}>{action.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Specials */}
-        <Text style={styles.sectionTitle}>Specials</Text>
-        <View style={styles.specialsRow}>
-          {(greenMode
-            ? [
-                { label: 'Local', icon: 'server-outline' as const, color: BSColors.successDark, bg: '#05966915' },
-                { label: 'Visual', icon: 'eye-outline' as const, color: BSColors.warningDark, bg: '#D9770615' },
-                { label: 'A11y', icon: 'accessibility-outline' as const, color: BSColors.infoDark, bg: '#0891B215' },
-                { label: 'Agent', icon: 'hardware-chip-outline' as const, color: BSColors.purple, bg: '#7C3AED15' },
-              ]
-            : [
-                { label: 'Agent', icon: 'hardware-chip-outline' as const, color: BSColors.purple, bg: '#7C3AED15' },
-                { label: 'A11y', icon: 'accessibility-outline' as const, color: BSColors.infoDark, bg: '#0891B215' },
-                { label: 'Visual', icon: 'eye-outline' as const, color: BSColors.warningDark, bg: '#D9770615' },
-                { label: 'Local', icon: 'server-outline' as const, color: BSColors.successDark, bg: '#05966915' },
-              ]
-          ).map(s => (
-            <TouchableOpacity
-              key={s.label}
-              style={styles.specialItem}
-              onPress={() => {
-                if (s.label === 'Local') return router.push('/(banking)/local-app' as any);
-                if (s.label === 'A11y') return router.push('/(banking)/a11y' as any);
-                if (s.label === 'Agent') return router.push('/(banking)/agents' as any);
-                if (s.label === 'Visual') return router.push('/(banking)/visual' as any);
-                router.push({ pathname: '/(banking)/coming-soon' as any, params: { feature: s.label } });
-              }}
-              testID={`special-${s.label.toLowerCase()}`}
-            >
-              <View style={[styles.specialIcon, { backgroundColor: s.bg }]}>
-                <Ionicons name={s.icon} size={24} color={s.color} />
-              </View>
-              <Text style={styles.specialLabel}>{s.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -493,53 +395,53 @@ const styles = StyleSheet.create({
 
   // Header
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  greeting: { color: BSColors.darkGray, fontSize: 13, fontWeight: '500' },
-  userName: { color: BSColors.textPrimary, fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
+  greeting: { color: BSColors.darkGray, fontSize: 13, fontFamily: 'Urbanist-Medium' },
+  userName: { color: BSColors.textPrimary, fontSize: 22, fontFamily: 'Urbanist-ExtraBold', letterSpacing: -0.3 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   locationBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: BSColors.white, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1, maxWidth: 130 },
-  locationText: { fontSize: 11, fontWeight: '600', flexShrink: 1 },
+  locationText: { fontSize: 11, fontFamily: 'Urbanist-SemiBold', flexShrink: 1 },
   notifBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: BSColors.white, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 },
   notifDot: { position: 'absolute', top: 9, right: 9, width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: BSColors.white },
 
   // Theme toggle
   themeToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11, marginBottom: 18, borderWidth: 1 },
-  themeToggleLabel: { flex: 1, fontSize: 13, fontWeight: '600' },
+  themeToggleLabel: { flex: 1, fontSize: 13, fontFamily: 'Urbanist-SemiBold' },
 
   // Balance card
-  balanceCard: { borderRadius: 24, padding: 24, marginBottom: 24, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10, overflow: 'hidden' },
-  cardShimmerOverlay: { position: 'absolute', top: 0, bottom: 0, width: 120, backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ skewX: '-20deg' }] },
+  balanceCard: { borderRadius: 24, padding: 24, marginBottom: 24, shadowColor: '#0F172A', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 16, elevation: 6, overflow: 'hidden' },
+  cardCircle: { position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: 80 },
   balanceCardGreen: { marginLeft: -6, marginTop: -4 },
   balanceCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
-  balanceLabel: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '500', marginBottom: 2 },
-  balanceCurrency: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600', letterSpacing: 1 },
+  balanceLabel: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontFamily: 'Urbanist-Medium', marginBottom: 2 },
+  balanceCurrency: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Urbanist-SemiBold', letterSpacing: 1 },
   eyeBtn: { padding: 4 },
-  balanceAmount: { color: BSColors.white, fontSize: 36, fontWeight: '800', letterSpacing: -0.5, marginBottom: 20 },
+  balanceAmount: { color: BSColors.white, fontSize: 36, fontFamily: 'Urbanist-ExtraBold', letterSpacing: -0.5, marginBottom: 20 },
   balanceDividerLine: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: 16 },
   balanceRow: { flexDirection: 'row', alignItems: 'center' },
   balanceItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   balanceItemIcon: { width: 30, height: 30, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   balanceItemLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 11, marginBottom: 2 },
-  balanceItemValue: { color: BSColors.white, fontSize: 15, fontWeight: '700' },
+  balanceItemValue: { color: BSColors.white, fontSize: 15, fontFamily: 'Urbanist-Bold' },
   balanceVertDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.2)', marginHorizontal: 8 },
 
   // Quick actions
-  sectionTitle: { color: BSColors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 14 },
-  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 },
-  quickAction: { width: '18%', alignItems: 'center', gap: 7, flexGrow: 1, maxWidth: '20%' },
-  quickActionIcon: { width: 54, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  quickActionLabel: { color: BSColors.textSecondary, fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  sectionTitle: { color: BSColors.textPrimary, fontSize: 16, fontFamily: 'Urbanist-Bold', marginBottom: 14 },
+  quickActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 16, marginBottom: 28 },
+  quickAction: { width: '31%', alignItems: 'center', gap: 8 },
+  quickActionIcon: { width: 72, height: 72, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  quickActionLabel: { color: BSColors.textSecondary, fontSize: 12, fontFamily: 'Urbanist-SemiBold', textAlign: 'center' },
 
   // Transactions
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  seeAll: { fontSize: 13, fontWeight: '600' },
+  seeAll: { fontSize: 13, fontFamily: 'Urbanist-SemiBold' },
   transactionCard: { backgroundColor: BSColors.white, borderRadius: 18, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3 },
   txRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
   txBorder: { borderBottomWidth: 1, borderBottomColor: BSColors.lightGray },
   txIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   txInfo: { flex: 1 },
-  txMerchant: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  txMerchant: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-SemiBold', marginBottom: 2 },
   txCategory: { color: BSColors.darkGray, fontSize: 12 },
-  txAmount: { fontSize: 14, fontWeight: '700' },
+  txAmount: { fontSize: 14, fontFamily: 'Urbanist-Bold' },
   txCredit: { color: BSColors.success },
   txDebit: { color: BSColors.error },
   emptyTx: { padding: 32, alignItems: 'center', gap: 10 },
@@ -547,49 +449,19 @@ const styles = StyleSheet.create({
 
   // Notifications
   notifHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: BSColors.mediumGray },
-  notifTitle: { color: BSColors.textPrimary, fontSize: 20, fontWeight: '800' },
+  notifTitle: { color: BSColors.textPrimary, fontSize: 20, fontFamily: 'Urbanist-ExtraBold' },
   notifCloseBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: BSColors.lightGray, alignItems: 'center', justifyContent: 'center' },
   notifItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: BSColors.white, borderRadius: 16, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   notifIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  notifItemTitle: { color: BSColors.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 3 },
+  notifItemTitle: { color: BSColors.textPrimary, fontSize: 14, fontFamily: 'Urbanist-Bold', marginBottom: 3 },
   notifItemBody: { color: BSColors.textSecondary, fontSize: 12, lineHeight: 17, marginBottom: 4 },
   notifItemTime: { color: BSColors.darkGray, fontSize: 11 },
 
-  // Passcode modal
-  pinOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
-  pinModal: { backgroundColor: BSColors.white, borderRadius: 20, padding: 28, width: '85%', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
-  pinModalHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-  pinModalTitle: { color: BSColors.textPrimary, fontSize: 18, fontWeight: '700' },
-  pinModalSub: { color: BSColors.darkGray, fontSize: 13, textAlign: 'center', marginBottom: 24 },
-  pinRow: { flexDirection: 'row', gap: 14, marginBottom: 16 },
-  pinBox: { width: 56, height: 64, borderRadius: 12, borderWidth: 2, borderColor: BSColors.indigoBorder, backgroundColor: BSColors.bgPageAlt, alignItems: 'center', justifyContent: 'center' },
-  pinBoxFilled: { borderColor: BSColors.primary, backgroundColor: BSColors.indigoBg },
-  pinBoxActive: { borderColor: BSColors.primary, borderWidth: 2.5 },
-  pinDigit: { color: '#111', fontSize: 22, fontWeight: '700' },
-  hiddenInput: { position: 'absolute', opacity: 0, width: 1, height: 1 },
-  pinError: { color: BSColors.errorDark, fontSize: 13, marginBottom: 12, textAlign: 'center' },
-  pinCancelBtn: { marginTop: 8, paddingVertical: 10, paddingHorizontal: 24 },
-  pinCancelText: { color: BSColors.darkGray, fontSize: 14, fontWeight: '600' },
-
   // QR result modal
+  pinOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
+  pinModalTitle: { color: BSColors.textPrimary, fontSize: 18, fontFamily: 'Urbanist-Bold' },
   qrResultModal: { backgroundColor: BSColors.white, borderRadius: 20, padding: 24, width: '88%', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
   qrResultText: { color: BSColors.textPrimary, fontSize: 14, textAlign: 'center', lineHeight: 22, paddingHorizontal: 4 },
   qrResultBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 12 },
-  qrResultBtnText: { color: BSColors.white, fontSize: 14, fontWeight: '700' },
-  // QR (legacy styles kept for reference)
-  qrHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: 'rgba(0,0,0,0.6)' },
-  qrClose: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  qrTitle: { color: BSColors.white, fontSize: 17, fontWeight: '700' },
-  qrBottomOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.75)', paddingBottom: 40 },
-  qrHint: { padding: 20, alignItems: 'center' },
-  qrHintText: { color: 'rgba(255,255,255,0.85)', fontSize: 14 },
-  qrActions: { paddingHorizontal: 24, paddingTop: 4, paddingBottom: 8 },
-  qrScanBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: BSColors.errorDark, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 24, minWidth: 120 },
-  qrScanBtnText: { color: BSColors.white, fontSize: 16, fontWeight: '700' },
-
-  // Specials
-  specialsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 28 },
-  specialItem: { alignItems: 'center', gap: 7, flex: 1 },
-  specialIcon: { width: 58, height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  specialLabel: { color: BSColors.textSecondary, fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  qrResultBtnText: { color: BSColors.white, fontSize: 14, fontFamily: 'Urbanist-Bold' },
 });
