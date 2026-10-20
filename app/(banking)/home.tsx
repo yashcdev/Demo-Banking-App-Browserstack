@@ -474,8 +474,9 @@ export default function HomeScreen() {
                 style={[styles.qrResultBtn, { backgroundColor: BSColors.darkGray }]}
                 onPress={() => { setShowQRModal(false); setScanned(false); setQrResult(null); }}
                 testID="qr-close-btn"
+                accessibilityLabel="Close"
+                accessibilityRole="button"
               >
-                <Ionicons name="close" size={16} color="#fff" style={{ marginRight: 6 }} />
                 <Text style={styles.qrResultBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
