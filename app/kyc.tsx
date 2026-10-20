@@ -6,7 +6,7 @@ import * as LegacyFS from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, BackHandler, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function KYCScreen() {
@@ -20,6 +20,22 @@ export default function KYCScreen() {
   const [downloadDone, setDownloadDone] = useState(false);
 
   const flowConfig = AuthStore.getFlowConfig();
+
+  // Intercept Android back — go to previous signup step
+  useEffect(() => {
+    const onBack = () => {
+      if (flowConfig.biometric) {
+        router.replace('/biometric' as any);
+      } else if (flowConfig.cameraInjection) {
+        router.replace('/liveness' as any);
+      } else {
+        router.replace('/otp' as any);
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, []);
 
   // Skip this step if fileUpload is disabled in flow config
   useEffect(() => {
@@ -100,7 +116,7 @@ export default function KYCScreen() {
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
-        <Image source={require('@/assets/images/browserstack-logo.png')} style={s.logo} contentFit="contain" />
+        <Image source={require('@/assets/images/bstack-bank-logo.png')} style={s.logo} contentFit="contain" />
 
         <View style={s.stepBadge}>
           <Text style={s.stepBadgeText}>Step 5 of 5 — KYC Verification</Text>

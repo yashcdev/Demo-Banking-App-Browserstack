@@ -5,7 +5,7 @@ import { firstError, validateEmail, validateRequired } from '@/utils/validation'
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -26,6 +26,11 @@ export default function LoginScreen() {
   const autoFillRegular = () => { setEmail('yash@gmail.com'); setPassword('12345678'); setError(''); };
   const autoFillWrong = () => { setEmail('yash@gmail.com'); setPassword('wrongpass'); setError(''); };
 
+  // Load biometric preference on mount
+  useEffect(() => {
+    AuthStore.loadBiometricEnabled();
+  }, []);
+
   const handleLogin = async () => {
     const validationError = firstError(
       validateEmail(email),
@@ -41,7 +46,12 @@ export default function LoginScreen() {
       AuthStore.setRole(res.user.role as any);
       AuthStore.setFlow('login');
       AuthStore.setEmail(email);
-      router.replace('/biometric' as any);
+      const biometricEnabled = AuthStore.getBiometricEnabled();
+      if (biometricEnabled) {
+        router.replace('/biometric' as any);
+      } else {
+        router.replace(res.user.role === 'admin' ? '/(admin)/users' as any : '/(banking)/home' as any);
+      }
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Please try again.');
     } finally {
@@ -55,7 +65,7 @@ export default function LoginScreen() {
 
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <Image source={require('@/assets/images/browserstack-logo.png')} style={styles.logo} contentFit="contain" testID="bs-logo" />
+          <Image source={require('@/assets/images/bstack-bank-logo.png')} style={styles.logo} contentFit="contain" testID="bs-logo" />
         </View>
 
         <Text style={styles.title}>Welcome Back</Text>
@@ -111,7 +121,7 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.linkRow} onPress={() => router.replace('/signup' as any)} testID="goto-signup" accessibilityLabel="Go to sign up" accessibilityRole="link">
-          <Text style={styles.linkText}>Don't have an account? <Text style={styles.link}>Sign Up</Text></Text>
+          <Text style={styles.linkText}>Don&apos;t have an account? <Text style={styles.link}>Sign Up</Text></Text>
         </TouchableOpacity>
 
         {/* Mock Data Controller Bar */}

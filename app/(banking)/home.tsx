@@ -8,7 +8,7 @@ import { scanFromURLAsync } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Animated,
   Modal, ScrollView,
@@ -26,7 +26,7 @@ export default function HomeScreen() {
   const [balanceVisible, setBalanceVisible] = useState(false);
   const [balanceUnlockedThisSession, setBalanceUnlockedThisSession] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const [scanned, setScanned] = useState(false);
+  const [, setScanned] = useState(false);
   const [qrResult, setQrResult] = useState<string | null>(null);
   const [balance, setBalance] = useState(BankStore.getBalance());
   const [recentTxs, setRecentTxs] = useState(BankStore.getTransactions().slice(0, 4));
@@ -103,11 +103,6 @@ export default function HomeScreen() {
     })();
   }, []);
 
-  // Fetch IP geolocation on mount
-  useEffect(() => {
-    fetchIpCurrency();
-  }, []);
-
   const fetchIpCurrency = useCallback(async () => {
     setIpLoading(true);
     try {
@@ -131,6 +126,11 @@ export default function HomeScreen() {
       setIpLoading(false);
     }
   }, []);
+
+  // Fetch IP geolocation on mount
+  useEffect(() => {
+    fetchIpCurrency();
+  }, [fetchIpCurrency]);
 
   const openQRScanner = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -160,6 +160,7 @@ export default function HomeScreen() {
   }, []);
 
   // Balance eye-icon handler — uses device passcode via LocalAuthentication
+  // When biometric is disabled app-wide, skip auth and show balance directly.
   const handleBalanceToggle = async () => {
     if (balanceVisible) {
       // User manually hides — require passcode again next time
@@ -213,6 +214,7 @@ export default function HomeScreen() {
     { label: 'Chat', icon: 'chatbubbles-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/chat' as any) },
     { label: 'Scan QR', icon: 'qr-code-outline' as const, color: BSColors.errorDark, bg: '#DC262615', onPress: openQRScanner },
     { label: 'Shop', icon: 'bag-outline' as const, color: BSColors.successDark, bg: '#05966915', onPress: () => router.push('/(banking)/shop' as any) },
+    // { label: 'Upload Doc', icon: 'document-attach-outline' as const, color: '#D97706', bg: '#D9770615', onPress: () => router.push('/kyc' as any) },
     { label: 'Network', icon: 'wifi-outline' as const, color: BSColors.infoDark, bg: '#0891B215', onPress: () => router.push('/(banking)/network' as any) },
     { label: 'Shake', icon: 'phone-portrait-outline' as const, color: BSColors.purple, bg: '#7C3AED15', onPress: () => router.push('/(banking)/testfeatures' as any) },
     {
@@ -472,8 +474,9 @@ export default function HomeScreen() {
                 style={[styles.qrResultBtn, { backgroundColor: BSColors.darkGray }]}
                 onPress={() => { setShowQRModal(false); setScanned(false); setQrResult(null); }}
                 testID="qr-close-btn"
+                accessibilityLabel="Close"
+                accessibilityRole="button"
               >
-                <Ionicons name="close" size={16} color="#fff" style={{ marginRight: 6 }} />
                 <Text style={styles.qrResultBtnText}>Close</Text>
               </TouchableOpacity>
             </View>

@@ -2,10 +2,10 @@ import { BSColors } from '@/constants/theme';
 import { AuthStore } from '@/store/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
+// import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, BackHandler, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LivenessScreen() {
@@ -16,6 +16,21 @@ export default function LivenessScreen() {
 
   const flowConfig = AuthStore.getFlowConfig();
 
+  // Intercept Android back
+  React.useEffect(() => {
+    const onBack = () => {
+      const flow = AuthStore.getFlow();
+      if (flow === 'login') {
+        router.replace('/(banking)/profile' as any);
+      } else {
+        router.replace('/otp' as any);
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, []);
+
   React.useEffect(() => {
     if (!flowConfig.cameraInjection) {
       navigateNext();
@@ -23,33 +38,36 @@ export default function LivenessScreen() {
   }, []);
 
   const navigateNext = () => {
-    if (flowConfig.biometric) {
-      router.replace('/biometric' as any);
-    } else if (flowConfig.fileUpload) {
-      router.replace('/kyc' as any);
-    } else {
-      router.replace('/(banking)/home' as any);
+    const flow = AuthStore.getFlow();
+    // When called from profile (login flow), go back to profile
+    if (flow === 'login') {
+      router.replace('/(banking)/profile' as any);
+      return;
     }
+    // Signup flow — original chain (biometric removed per new spec, go to home)
+    router.replace('/(banking)/home' as any);
   };
 
   const handleLaunchCamera = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      // Permission denied — skip
-      navigateNext();
-      return;
-    }
-    // Launch native OS camera — leaves the app, user takes photo, returns here
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: 'images',
-      quality: 0.85,
-      allowsEditing: false,
-    });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setCapturedUri(result.assets[0].uri);
-      setPhase('preview');
-    }
-    // If cancelled, stay on ready screen
+    // FILE UPLOAD COMMENTED OUT — uncomment import and body below to re-enable
+    // const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    // if (status !== 'granted') {
+    //   // Permission denied — skip
+    //   navigateNext();
+    //   return;
+    // }
+    // // Launch native OS camera — leaves the app, user takes photo, returns here
+    // const result = await ImagePicker.launchCameraAsync({
+    //   mediaTypes: 'images',
+    //   quality: 0.85,
+    //   allowsEditing: false,
+    // });
+    // if (!result.canceled && result.assets?.[0]?.uri) {
+    //   setCapturedUri(result.assets[0].uri);
+    //   setPhase('preview');
+    // }
+    // // If cancelled, stay on ready screen
+    navigateNext();
   };
 
   const handleRecapture = () => {
@@ -58,31 +76,32 @@ export default function LivenessScreen() {
   };
 
   const handleSetProfile = async () => {
-    if (!capturedUri) return;
-    setUploadLoading(true);
-    try {
-      const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'fhyftzkc';
-      const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? 'bs_banking_unsigned';
-      const formData = new FormData();
-      formData.append('file', { uri: capturedUri, type: 'image/jpeg', name: 'liveness.jpg' } as any);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('folder', 'bs_banking/profiles');
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.secure_url) {
-        const currentUser = AuthStore.getUser();
-        if (currentUser) {
-          AuthStore.setUser({ ...currentUser, avatarUrl: data.secure_url });
-        }
-      }
-    } catch {
-      // Non-fatal
-    } finally {
-      setUploadLoading(false);
-    }
+    // FILE UPLOAD COMMENTED OUT — uncomment below to re-enable Cloudinary upload
+    // if (!capturedUri) return;
+    // setUploadLoading(true);
+    // try {
+    //   const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'fhyftzkc';
+    //   const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? 'bs_banking_unsigned';
+    //   const formData = new FormData();
+    //   formData.append('file', { uri: capturedUri, type: 'image/jpeg', name: 'liveness.jpg' } as any);
+    //   formData.append('upload_preset', uploadPreset);
+    //   formData.append('folder', 'bs_banking/profiles');
+    //   const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    //     method: 'POST',
+    //     body: formData,
+    //   });
+    //   const data = await res.json();
+    //   if (data.secure_url) {
+    //     const currentUser = AuthStore.getUser();
+    //     if (currentUser) {
+    //       AuthStore.setUser({ ...currentUser, avatarUrl: data.secure_url });
+    //     }
+    //   }
+    // } catch {
+    //   // Non-fatal
+    // } finally {
+    //   setUploadLoading(false);
+    // }
     navigateNext();
   };
 
@@ -91,7 +110,7 @@ export default function LivenessScreen() {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.container}>
-        <Image source={require('@/assets/images/browserstack-logo.png')} style={s.logo} contentFit="contain" />
+        <Image source={require('@/assets/images/bstack-bank-logo.png')} style={s.logo} contentFit="contain" />
 
         <View style={s.stepBadge}>
           <Text style={s.stepBadgeText}>Step 3 of 5 — Liveness Check</Text>

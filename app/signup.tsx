@@ -80,16 +80,7 @@ export default function SignupScreen() {
     AuthStore.setFlow('signup');
     AuthStore.setEmail(email);
     AuthStore.setFlowConfig(flowConfig);
-    const cfg = flowConfig;
-    if (cfg.cameraInjection) {
-      router.replace('/liveness' as any);
-    } else if (cfg.biometric) {
-      router.replace('/biometric' as any);
-    } else if (cfg.fileUpload) {
-      router.replace('/kyc' as any);
-    } else {
-      router.replace('/(banking)/home' as any);
-    }
+    router.replace('/(banking)/home' as any);
     setLoading(false);
   };
 
@@ -98,7 +89,7 @@ export default function SignupScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         <View style={styles.logoContainer}>
-          <Image source={require('@/assets/images/browserstack-logo.png')} style={styles.logo} contentFit="contain" testID="bs-logo-signup" />
+          <Image source={require('@/assets/images/bstack-bank-logo.png')} style={styles.logo} contentFit="contain" testID="bs-logo-signup" />
         </View>
 
         <Text style={styles.title}>Create Account</Text>

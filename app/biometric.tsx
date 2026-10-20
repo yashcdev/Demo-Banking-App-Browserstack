@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { BackHandler, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function BiometricScreen() {
@@ -14,6 +14,33 @@ export default function BiometricScreen() {
   const [verified, setVerified] = useState(false);
   const [bioError, setBioError] = useState('');
   const isSignup = AuthStore.getFlow() === 'signup';
+
+  // Intercept Android hardware back — go to login (login flow) or OTP (signup flow)
+  // instead of exiting the app or popping to an already-replaced screen.
+  useEffect(() => {
+    const onBack = () => {
+      handleBack();
+      return true; // prevent default (app exit)
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, []);
+
+  const handleBack = () => {
+    if (isSignup) {
+      // In signup flow, going back means the user hasn't completed biometric yet.
+      // Clear the token so they can't re-enter via persistent login bypass.
+      AuthStore.clearToken();
+      AuthStore.setFlow('login');
+      router.replace('/signup' as any);
+    } else {
+      // Login flow — clear token so persistent login doesn't auto-route to home
+      // without biometric being completed.
+      AuthStore.clearToken();
+      AuthStore.setFlow('login');
+      router.replace('/' as any);
+    }
+  };
 
   useEffect(() => {
     if (isSignup) {
@@ -60,16 +87,12 @@ export default function BiometricScreen() {
     setBioLoading(true);
     setBioError('');
     try {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      if (!hasHardware || !isEnrolled) {
-        setBioLoading(false);
-        handleSuccess();
-        return;
-      }
-
+      // Do NOT skip based on isEnrolled — on BrowserStack the biometric executor
+      // handles enrollment simulation. Always invoke authenticateAsync so the
+      // BrowserStack biometric prompt appears.
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: 'Verify your identity to continue',
+        fallbackLabel: 'Use Passcode',
         cancelLabel: 'Cancel',
         // disableDeviceFallback: true — biometric only, no "Use PIN" fallback button
         // inside the prompt. This means a single Fail press resolves immediately
@@ -79,6 +102,8 @@ export default function BiometricScreen() {
       setBioLoading(false);
       if (result.success) {
         handleSuccess();
+      } else if (result.error === 'user_cancel') {
+        setBioError('Biometric cancelled. Tap "Scan Biometric" to try again.');
       } else {
         setBioError('Biometric authentication failed. Please try again.');
       }
@@ -92,7 +117,7 @@ export default function BiometricScreen() {
     <SafeAreaView style={s.safe}>
       <View style={s.container}>
 
-        <Image source={require('@/assets/images/browserstack-logo.png')} style={s.logo} contentFit="contain" testID="bs-logo-bio" />
+        <Image source={require('@/assets/images/bstack-bank-logo.png')} style={s.logo} contentFit="contain" testID="bs-logo-bio" />
 
         {isSignup && (
           <View style={s.stepBadge}>

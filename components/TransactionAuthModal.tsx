@@ -1,7 +1,7 @@
 /**
  * TransactionAuthModal
- * Either/Or transaction authentication: Device Passcode OR Biometric — either one is sufficient.
- * The PIN is verified against the device passcode (not a hardcoded value).
+ * Transaction authentication using native device biometric OR passcode.
+ * No in-app PIN keypad — the OS system prompt handles everything.
  */
 import { BSColors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 type Step = 'auth' | 'success' | 'failed';
 
@@ -29,141 +28,63 @@ interface Props {
 
 export function TransactionAuthModal({ visible, amount, description, onSuccess, onCancel }: Props) {
   const [step, setStep] = useState<Step>('auth');
-  const [pin, setPin] = useState('');
-  const [pinError, setPinError] = useState('');
-  const [bioLoading, setBioLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [failReason, setFailReason] = useState('');
-  const shakeAnim = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
       setStep('auth');
-      setPin('');
-      setPinError('');
+      setAuthLoading(false);
+      setAuthError('');
       setFailReason('');
-      setBioLoading(false);
     }
   }, [visible]);
-
-  const shakeStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: shakeAnim.get() }],
-  }));
-
-  const shake = () => {
-    shakeAnim.value = withSequence(
-      withTiming(10, { duration: 60 }),
-      withTiming(-10, { duration: 60 }),
-      withTiming(8, { duration: 60 }),
-      withTiming(-8, { duration: 60 }),
-      withTiming(0, { duration: 60 }),
-    );
-  };
 
   const handleSuccess = () => {
     setStep('success');
     setTimeout(() => onSuccess(), 600);
   };
 
-  const handleFail = (reason: string) => {
-    setFailReason(reason);
-    setStep('failed');
+  const handleRetry = () => {
+    setStep('auth');
+    setAuthLoading(false);
+    setAuthError('');
+    setFailReason('');
   };
 
-  // ── PIN ──────────────────────────────────────────────────────────────────────
-  const handlePinKey = (key: string) => {
-    if (pin.length >= 4) return;
-    const newPin = pin + key;
-    setPin(newPin);
-    setPinError('');
-    if (newPin.length === 4) {
-      setTimeout(() => validatePin(newPin), 150);
+  // Single native auth — biometric if available, falls back to device passcode.
+  // disableDeviceFallback: false lets the OS show biometric OR passcode prompt.
+  // Do NOT skip based on isEnrolled — BrowserStack executor handles it.
+  // When biometric is disabled app-wide, skip auth and auto-succeed.
+  const triggerAuth = async () => {
+    const { AuthStore } = await import('@/store/auth');
+    if (!AuthStore.getBiometricEnabled()) {
+      handleSuccess();
+      return;
     }
-  };
-
-  const handlePinDelete = () => {
-    setPin(prev => prev.slice(0, -1));
-    setPinError('');
-  };
-
-  const validatePin = async (_enteredPin: string) => {
-    // Verify against the device passcode only (no biometric) using LocalAuthentication.
-    // disableDeviceFallback: true on Android shows the device PIN/pattern/password
-    // screen directly, bypassing the biometric prompt entirely.
+    setAuthLoading(true);
+    setAuthError('');
     try {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      if (!hasHardware || !isEnrolled) {
-        handleSuccess();
-        return;
-      }
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Enter your device passcode to authorize',
-        cancelLabel: 'Cancel',
-        disableDeviceFallback: true,
-      });
-      if (result.success) {
-        handleSuccess();
-      } else if (result.error === 'user_cancel') {
-        setPin('');
-      } else {
-        shake();
-        setPinError('Incorrect passcode. Try again or use biometrics.');
-        setPin('');
-      }
-    } catch {
-      shake();
-      setPinError('Passcode verification failed. Try again or use biometrics.');
-      setPin('');
-    }
-  };
-
-  // ── Biometric ────────────────────────────────────────────────────────────────
-  const triggerBiometric = async () => {
-    setBioLoading(true);
-    try {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      if (!hasHardware || !isEnrolled) {
-        // No biometric set up — auto-pass (demo / BrowserStack device)
-        setBioLoading(false);
-        handleSuccess();
-        return;
-      }
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Confirm transaction with biometrics',
-        fallbackLabel: 'Use PIN instead',
+        promptMessage: 'Authenticate to authorize transaction',
+        fallbackLabel: 'Use Passcode',
         cancelLabel: 'Cancel',
         disableDeviceFallback: false,
       });
-      setBioLoading(false);
+      setAuthLoading(false);
       if (result.success) {
         handleSuccess();
       } else if (result.error === 'user_cancel') {
         // User cancelled — stay on screen silently
-      } else if (result.error === 'user_fallback') {
-        // User tapped "Use PIN instead" — just focus the PIN area
-        setPinError('Enter your PIN below to authorize.');
       } else {
-        // Any other failure — auto-pass for demo (BrowserStack devices may not have biometric enrolled)
-        setBioLoading(false);
-        handleSuccess();
+        setAuthError('Authentication failed. Please try again.');
       }
     } catch {
-      // If LocalAuthentication throws entirely, auto-pass for demo
-      setBioLoading(false);
-      handleSuccess();
+      setAuthLoading(false);
+      setAuthError('Authentication unavailable. Please try again.');
     }
   };
-
-  const handleRetry = () => {
-    setStep('auth');
-    setPin('');
-    setPinError('');
-    setFailReason('');
-    setBioLoading(false);
-  };
-
-  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
@@ -183,55 +104,29 @@ export function TransactionAuthModal({ visible, amount, description, onSuccess, 
             </TouchableOpacity>
           </View>
 
-          {/* Auth screen — PIN OR Biometric */}
+          {/* Auth screen */}
           {step === 'auth' && (
             <View style={s.body}>
-              <Text style={s.orLabel}>Use PIN or Biometric to authorize</Text>
+              <View style={s.iconCircle}>
+                <Ionicons name="finger-print" size={56} color={BSColors.primary} />
+              </View>
+              <Text style={s.hint}>Use your biometric or device passcode to authorize this transaction.</Text>
 
-              {/* Biometric button — prominent at top */}
+              {authError ? (
+                <Text style={s.errorText} testID="auth-error">{authError}</Text>
+              ) : null}
+
               <TouchableOpacity
-                style={[s.bioBtn, bioLoading && s.bioBtnDisabled]}
-                onPress={triggerBiometric}
-                disabled={bioLoading}
+                style={[s.authBtn, authLoading && s.authBtnDisabled]}
+                onPress={triggerAuth}
+                disabled={authLoading}
                 testID="bio-auth-btn"
               >
-                {bioLoading
+                {authLoading
                   ? <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
                   : <Ionicons name="finger-print-outline" size={22} color="#fff" style={{ marginRight: 8 }} />}
-                <Text style={s.bioBtnText}>{bioLoading ? 'Verifying...' : 'Use Biometric'}</Text>
+                <Text style={s.authBtnText}>{authLoading ? 'Verifying...' : 'Authenticate'}</Text>
               </TouchableOpacity>
-
-              {/* Divider */}
-              <View style={s.divider}>
-                <View style={s.dividerLine} />
-                <Text style={s.dividerText}>or enter PIN</Text>
-                <View style={s.dividerLine} />
-              </View>
-
-              {/* PIN dots */}
-              <Animated.View style={[s.pinDots, shakeStyle]}>
-                {[0,1,2,3].map(i => (
-                  <View key={i} style={[s.pinDot, pin.length > i && s.pinDotFilled]} />
-                ))}
-              </Animated.View>
-
-              {pinError ? <Text style={s.errorText} testID="pin-error">{pinError}</Text> : null}
-
-              {/* Keypad */}
-              <View style={s.keypad}>
-                {KEYS.map((key, idx) => (
-                  key === '' ? <View key={idx} style={s.keyEmpty} /> :
-                  key === '⌫' ? (
-                    <TouchableOpacity key={idx} style={s.keyBtn} onPress={handlePinDelete} testID="pin-delete">
-                      <Ionicons name="backspace-outline" size={22} color="#334155" />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity key={idx} style={s.keyBtn} onPress={() => handlePinKey(key)} testID={`pin-key-${key}`}>
-                      <Text style={s.keyText}>{key}</Text>
-                    </TouchableOpacity>
-                  )
-                ))}
-              </View>
             </View>
           )}
 
@@ -276,22 +171,13 @@ const s = StyleSheet.create({
   headerIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: BSColors.indigoBg, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { color: BSColors.textPrimary, fontSize: 16, fontWeight: '800' },
   headerAmount: { color: BSColors.darkGray, fontSize: 13, marginTop: 2 },
-  body: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 20 },
-  orLabel: { color: BSColors.darkGray, fontSize: 13, textAlign: 'center', marginBottom: 16 },
-  bioBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: BSColors.primary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, width: '100%', marginBottom: 4 },
-  bioBtnDisabled: { opacity: 0.6 },
-  bioBtnText: { color: BSColors.white, fontSize: 15, fontWeight: '700' },
-  divider: { flexDirection: 'row', alignItems: 'center', width: '100%', marginVertical: 16, gap: 10 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: BSColors.mediumGray },
-  dividerText: { color: BSColors.slate300, fontSize: 12, fontWeight: '600' },
-  pinDots: { flexDirection: 'row', gap: 16, marginBottom: 8 },
-  pinDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: BSColors.indigoBorder, backgroundColor: BSColors.white },
-  pinDotFilled: { backgroundColor: BSColors.primary, borderColor: BSColors.primary },
-  errorText: { color: BSColors.errorDark, fontSize: 12, marginBottom: 8, textAlign: 'center' },
-  keypad: { flexDirection: 'row', flexWrap: 'wrap', width: 240, gap: 10, justifyContent: 'center', marginTop: 4 },
-  keyBtn: { width: 64, height: 56, borderRadius: 14, backgroundColor: BSColors.bgPageAlt, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: BSColors.mediumGray },
-  keyEmpty: { width: 64, height: 56 },
-  keyText: { color: BSColors.textPrimary, fontSize: 22, fontWeight: '600' },
+  body: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 24, paddingBottom: 8 },
+  iconCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: BSColors.indigoBg, borderWidth: 2, borderColor: BSColors.indigoBorder, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  hint: { color: BSColors.darkGray, fontSize: 14, textAlign: 'center', marginBottom: 20, lineHeight: 20 },
+  errorText: { color: BSColors.errorDark, fontSize: 13, marginBottom: 16, textAlign: 'center' },
+  authBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: BSColors.primary, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 32, width: '100%' },
+  authBtnDisabled: { opacity: 0.6 },
+  authBtnText: { color: BSColors.white, fontSize: 16, fontWeight: '700' },
   successCircle: { marginBottom: 16, marginTop: 8 },
   successTitle: { color: BSColors.successDark, fontSize: 22, fontWeight: '800', marginBottom: 8 },
   successSub: { color: BSColors.darkGray, fontSize: 14 },

@@ -17,11 +17,14 @@ interface AuthState {
   user: User | null;
   email: string;
   flowConfig: FlowConfig;
+  biometricEnabled: boolean;
   setRole: (role: UserRole) => void;
   setFlow: (flow: AuthFlow) => void;
   setEmail: (email: string) => void;
   setFlowConfig: (cfg: Partial<FlowConfig>) => void;
   resetFlowConfig: () => void;
+  setBiometricEnabled: (enabled: boolean) => Promise<void>;
+  loadBiometricEnabled: () => Promise<void>;
   setToken: (token: string) => Promise<void>;
   loadToken: () => Promise<string | null>;
   clearToken: () => Promise<void>;
@@ -37,6 +40,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   email: '',
   flowConfig: { ...DEFAULT_FLOW_CONFIG },
+  biometricEnabled: true,
 
   setRole: (role) => set({ role }),
   setFlow: (flow) => set({ flow }),
@@ -46,6 +50,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set((state) => ({ flowConfig: { ...state.flowConfig, ...cfg } })),
 
   resetFlowConfig: () => set({ flowConfig: { ...DEFAULT_FLOW_CONFIG } }),
+
+  setBiometricEnabled: async (enabled) => {
+    set({ biometricEnabled: enabled });
+    await AsyncStorage.setItem('biometric_enabled', enabled ? 'true' : 'false');
+  },
+
+  loadBiometricEnabled: async () => {
+    const stored = await AsyncStorage.getItem('biometric_enabled');
+    // Default is true — only false when explicitly set to 'false'
+    set({ biometricEnabled: stored !== 'false' });
+  },
 
   setToken: async (token) => {
     set({ token });
@@ -99,4 +114,7 @@ export const AuthStore = {
   getUser: () => useAuthStore.getState().user,
   clearUser: () => useAuthStore.getState().clearUser(),
   logout: () => useAuthStore.getState().logout(),
+  getBiometricEnabled: () => useAuthStore.getState().biometricEnabled,
+  setBiometricEnabled: (enabled: boolean) => useAuthStore.getState().setBiometricEnabled(enabled),
+  loadBiometricEnabled: () => useAuthStore.getState().loadBiometricEnabled(),
 };

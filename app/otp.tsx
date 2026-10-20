@@ -4,8 +4,8 @@ import { AuthStore } from '@/store/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { BackHandler, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function OTPScreen() {
@@ -17,6 +17,20 @@ export default function OTPScreen() {
   const inputRef = useRef<TextInput>(null);
   const isSignup = AuthStore.getFlow() === 'signup';
   const email = AuthStore.getEmail();
+
+  // Intercept Android back — go to signup screen (signup flow) or login (login flow)
+  useEffect(() => {
+    const onBack = () => {
+      if (isSignup) {
+        router.replace('/signup' as any);
+      } else {
+        router.replace('/' as any);
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, [isSignup, router]);
 
   // Send OTP on mount and store it for autofill (demo convenience)
   useEffect(() => {
@@ -80,7 +94,7 @@ export default function OTPScreen() {
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={s.container}>
-          <Image source={require('@/assets/images/browserstack-logo.png')} style={s.logo} contentFit="contain" testID="bs-logo-otp" />
+          <Image source={require('@/assets/images/bstack-bank-logo.png')} style={s.logo} contentFit="contain" testID="bs-logo-otp" />
 
           {isSignup && (
             <View style={s.stepBadge}>
@@ -139,7 +153,7 @@ export default function OTPScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={s.resendRow} onPress={handleResend}>
-            <Text style={s.resendText}>Didn't receive code? <Text style={s.resendLink}>Resend</Text></Text>
+            <Text style={s.resendText}>Didn&apos;t receive code? <Text style={s.resendLink}>Resend</Text></Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
